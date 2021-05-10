@@ -44,3 +44,5 @@ As you can see, Python and R can work harmoniously together. All the components 
 ```{R}
 cat(c(message, py$reply, "We finished! Yay!"))
 ```
+
+![Cinnamon Roll Hug](images/Group Hug.JPG){width=80% height=80%}
