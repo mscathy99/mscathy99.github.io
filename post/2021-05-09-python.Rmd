@@ -1,0 +1,46 @@
+---
+title: Python and R
+author: Cathy Nguyen
+date: '2021-05-09'
+slug: python
+categories: []
+tags: []
+description: ''
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(reticulate)
+```
+
+Have you ever been on a team that prefers different coding languages? For example, I am accustomed to R, but my group project partner only understands Python. Wouldn't it be nice to have an interface where we can use both of our codes? Well, this is possible with **reticulate**. Reticulate embeds a Python session into an R session, which can streamline workflow. Isn't this incredible? First, we need to install the package *reticulate*.
+
+```{R}
+library(reticulate)
+py_install("seaborn")
+```
+
+I prefer tidying my data using dplyr in R. It's easy, but what if my partner wants the data to create graphs using Python? 
+
+```{R}
+EADA <- read_xlsx("EADA_2018.xlsx")
+Texas <- EADA %>% filter(state_cd == "TX") %>% filter(str_detect(sector_name,"Public")) %>% select(institution = institution_name, city = city_txt, sector = sector_name, class = classification_name, student_aid = STUDENTAID_TOTAL, Revenue = GRND_TOTAL_REVENUE, expense = GRND_TOTAL_EXPENSE) %>% separate(sector, into = c("Public","College"),sep = ", ")
+glimpse(Texas)
+message <- "Please make it pretty. -Cathy"
+message
+```
+
+We can create a python session in R markdown to perform the task. It's simple. Instead of writing *R* in the curly brackets, put *python* instead. We can import python functions during this session as well. You can also create secret messages for each other and keep a fun conversation going. 
+
+```{python, echo = FALSE}
+reply = "\nI got it! - T\n"
+import seaborn as sns
+sns.boxplot(x = "College", y = "Revenue", data=r.Texas)
+```
+
+As you can see, Python and R can work harmoniously together. All the components of our project can come together beautifully like a cinnamon roll hug. 
+
+```{R}
+cat(c(message, py$reply, "We finished! Yay!"))
+```
