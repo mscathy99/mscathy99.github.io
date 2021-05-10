@@ -1,22 +1,0 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>Posts on Cathy Nguyen</title>
-    <link>/post/</link>
-    <description>Recent content in Posts on Cathy Nguyen</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>en-US</language>
-    <lastBuildDate>Sun, 09 May 2021 00:00:00 +0000</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>Python and R</title>
-      <link>/post/2021/05/09/python/</link>
-      <pubDate>Sun, 09 May 2021 00:00:00 +0000</pubDate>
-      
-      <guid>/post/2021/05/09/python/</guid>
-      <description>Square bracks ([]) define a list. Indexing begins at 0, so the first element is at the 0th position. The nth element will be located in the (n-1)th position.
-personal_dict = {&amp;#39;firstName&amp;#39;:&amp;#39;Cathy&amp;#39;, &amp;#39;lastName&amp;#39;:&amp;quot;Nguyen&amp;quot;, &amp;#39;hobbies&amp;#39;:[&amp;#39;tennis&amp;#39;,&amp;#39;ice skating&amp;#39;, &amp;#39;singing&amp;#39;, &amp;#39;paper crafting&amp;#39;],&amp;#39;occupation&amp;#39;:&amp;#39;student&amp;#39;,&amp;#39;age&amp;#39;:22}print(personal_dict)## {&amp;#39;firstName&amp;#39;: &amp;#39;Cathy&amp;#39;, &amp;#39;lastName&amp;#39;: &amp;#39;Nguyen&amp;#39;, &amp;#39;hobbies&amp;#39;: [&amp;#39;tennis&amp;#39;, &amp;#39;ice skating&amp;#39;, &amp;#39;singing&amp;#39;, &amp;#39;paper crafting&amp;#39;], &amp;#39;occupation&amp;#39;: &amp;#39;student&amp;#39;, &amp;#39;age&amp;#39;: 22}Cinnamon Roll Hug
-</description>
-    </item>
-    
-  </channel>
-</rss>
