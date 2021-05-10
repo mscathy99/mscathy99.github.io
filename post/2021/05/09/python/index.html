@@ -32,6 +32,9 @@ glimpse(Texas)</code></pre>
 message</code></pre>
 <pre><code>## [1] &quot;Please make it pretty. -Cathy&quot;</code></pre>
 <p>We can create a python session in R markdown to perform the task. It’s simple. Instead of writing <em>R</em> in the curly brackets, put <em>python</em> instead. We can import python functions during this session as well. You can also create secret messages for each other and keep a fun conversation going.</p>
+<pre class="python"><code>reply = &quot;\nI got it! - T\n&quot;
+import seaborn as sns
+sns.boxplot(x = &quot;College&quot;, y = &quot;Revenue&quot;, data=r.Texas)</code></pre>
 <p><img src="/post/2021-05-09-python_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>As you can see, Python and R can work harmoniously together. All the components of our project can come together beautifully like a cinnamon roll hug.</p>
 <pre class="r"><code>cat(c(message, py$reply, &quot;We finished! Yay!&quot;))</code></pre>

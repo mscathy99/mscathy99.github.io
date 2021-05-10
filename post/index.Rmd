@@ -33,7 +33,7 @@ message
 
 We can create a python session in R markdown to perform the task. It's simple. Instead of writing *R* in the curly brackets, put *python* instead. We can import python functions during this session as well. You can also create secret messages for each other and keep a fun conversation going. 
 
-```{python, echo = FALSE}
+```{python}
 reply = "\nI got it! - T\n"
 import seaborn as sns
 sns.boxplot(x = "College", y = "Revenue", data=r.Texas)
