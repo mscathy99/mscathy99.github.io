@@ -1,0 +1,254 @@
+---
+title: 'Project 1: Exploratory Data Analysis'
+author: "Cathy Nguyen"
+date: '2021-04-04'
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F,
+tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
+```
+
+
+```{r LoadPackages, include = FALSE}    
+library(readxl)
+library(tidyverse)
+library(scales)
+library(extrafont)
+loadfonts()
+library(ggthemes)
+library(factoextra)
+```
+
+# Introduction
+The college sports industry is immense. In 2019, the NCAA athletics departments generated a total of $18.9 billion in 2019.  For this project, I evaluated the athletic departments of both public two-year and four-year institutions in Texas. The Equity in Athletics Data Analysis (EADA) provides athletics data from all co-educational postsecondary institutions that receive Title IV funding and have an intercollegiate athletics program. The EADA used was for the 2018-2019 academic school year. The EADA dataset contains thousands of variables related to collegiate athletics. For this project, I specifically looked at the total expenses, total revenue, and financial aid provided to student-athletes for each school's athletics department. I also retrieved the name of postsecondary institution, city, and NCAA or NCJAA division classification for each school from the EADA dataset. The second dataset used in the project comes from the Texas Higher Education Coordinating Board (THECB). Their 2019 almanac gives a profile of state and institutional performance and characteristics. For each institution, the number of students and average tuition and fees can be known using this dataset. I predict that schools with more students and more expensive tuition will also see greater expenses and revenues from their athletics departments.   
+
+[Equity in Athletics Data Analysis (EADA)] (https://ope.ed.gov/athletics/#/datafile/list)
+
+```{R}
+## Dataset 1: EADA for 2018-2019 School Year
+EADA <- suppressMessages(read_excel("EADA_2019.xlsx"))
+# Filter out Texas schools and selected variables
+Texas <- EADA %>% filter(state_cd == "TX") %>% filter(str_detect(sector_name,"Public")) %>% select(institution = institution_name, city = city_txt, sector = sector_name, class = classification_name, student_aid = STUDENTAID_TOTAL, revenue = GRND_TOTAL_REVENUE, expense = GRND_TOTAL_EXPENSE)
+glimpse(Texas)
+```
+
+[Texas Public Higher Educaiton Almanac (2019)] (https://www.highered.texas.gov/data-reports/texas-public-higher-education-almanac/)
+
+```{R}
+## Dataset 2: 30x60TX Almanac Data (2019)
+
+# Data for Texas Public Two-Year Institution
+Two <- suppressMessages(read_excel("60x30TX.xlsx", sheet = "2-year 2019"))
+two <- Two %>% select(institution = `2-year public institution`, students = Total...10, tuition = `Average tuition & fees`) %>% slice(1:(n()-3))
+
+# Data for Texas Public Four-Year institution
+Four <- suppressMessages(read_excel("60x30TX.xlsx", sheet = "4-year 2019"))
+four <- Four %>% select(institution = `4-year public institution`, students = `Total enrollment`, tuition = `Average tuition & fees`) %>% slice(1:(n()-5)) 
+
+# Combine all almanac data into one dataset
+almanac <- rbind(two, four)
+
+glimpse(almanac)
+```
+
+
+# Join/Merging
+```{R}
+# Unique entries for separate dataset
+nrow(Texas)
+nrow(almanac)
+
+# Joining the datasets
+texas <- left_join(Texas, almanac, by = "institution")
+glimpse(texas)
+```
+The join performed was a left join. The left join will include all of the data in the EADA dataset after selecting all the public Texas schools and variables of interest (*Texas*). All 72 observations in the *Texas* dataset are in the final joined dataset *texas*. 
+
+The dataset from the 30x60TX Texas Higher Education Almanac (*almanac*) adds two variables to our joined dataset: students enrolled (*students*) and average tuition and fees (*tuition*). All 72 schools found in the *Texas* dataset had a counterpart in the *almanac* dataset. 
+
+```{R}
+# Almanac entries not included
+almanac %>% filter(!(institution %in% texas$institution)) %>% summarize(unique(institution))
+```
+There were 125 schools in the *almanac* dataset, so 53 schools from the *almanac* dataset are excluded. These two-year and four-year institutions that are left out could lack an athletics department. Some community colleges are also a part of a district with an athletics department. In those situations, the district as a whole is considered instead of the specific campuses.  
+ 
+
+# Wrangling {.tabset}
+
+## New Variable: Profit
+```{R}
+# Create new variable for the profit of the athletics department
+texas <- texas %>% na.omit() %>%  mutate(profit = revenue - expense)
+glimpse(texas)
+```
+The new variable is called profit. The profit for each college or university athletic department is equal to the total revenue minus the total. 
+
+## Correlation Between Numeric Variables
+```{R}
+texas %>% select(student_aid:profit) %>% cor()
+```
+The correlation was calculated for each pair of numeric variables. The correlation will be further discussed with the correlation heatmap. 
+
+## Numeric Variables
+```{R}
+# Arranging by tuition and revenuce
+texas %>% select(institution, tuition, revenue) %>% arrange(desc(tuition))
+texas %>% select(institution, expense, revenue) %>% arrange(desc(revenue))
+texas %>% select(institution, tuition, revenue) %>% arrange(-desc(tuition))
+texas %>% select(institution, expense, revenue) %>% arrange(-desc(revenue))
+
+# Summary statistics (mean, sd, min, and max) of all numeric variables without grouping 
+texas %>% select(student_aid:profit) %>% summarize_all(funs(mean, sd))
+texas %>% select(student_aid:profit) %>% summarize_all(funs(min, max))
+
+# Separate sector and class variables into more variables
+texas2 <- suppressWarnings(texas %>% separate(class, into = c("association","blank","division"), sep = " ") %>% separate(sector, into = c("public","college"),sep = ", "))
+
+## NCAA Institutions
+texas2 %>% filter(association == "NCAA") %>%  select(student_aid:profit)  %>% summarize_all(funs(mean, sd))
+```  
+The University of Texas at Dallas had the most expensive tuition and fees but is out of the top 30 for athletic revenue. The average profit for a collegiate athletic department in Texas is \$868,080.2, but the standard deviation is large (\$5,057,931). The mean tuition is \$5557.389 with a standard deviation of \$3508.23. However, when looking at the NCAA institutions, the averages are much higher. The average profit for an NCAA athletic department in Texas is \$2,190,484 with a standard deviation of \$8,018,654. The mean tuition for NCAA schools is \$9604.536 with a standard deviation of \$1267.585.
+
+## Grouping By Categorical Variables
+```{R}
+# Distinct categories in categorical variables using n_distinct
+texas %>% select(1:4) %>% summarize_all(n_distinct)
+
+# Group by two- or four-year institutions and classification
+suppressMessages(texas %>% group_by(sector, class) %>% select(5:10) %>% summarize_all(mean)) 
+suppressMessages(texas %>% group_by(sector, class) %>% summarize(n=n()))
+```
+I grouped my data by sector and by athletics classification. There are two different public sectors: two-year or four-year. There are seven different classifications found in our dataset: NJCAA Division I, NJCAA Division III, NAIA Division I, NCAA Division I, NCAA Division II, NCAA Division III, and Other. The mean for all numerical values was calculated after grouping. NCAA Division I schools, all 4-year institutions, had the greatest average for all numerical variables. NJCAA Division I schools have more financial aid on athletes than NCAA Division III schools despite a lower tuition rate and profit from the athletics departments. 
+
+# Tidying: Rearranging Wide/Long
+```{R}
+texas %>% pivot_longer(student_aid:expense, names_to = "flow") %>% separate(class, into = c("association","blank","division"), sep = " ") %>% mutate(cash = value/(students*tuition)) %>% select(institution, association, division, flow, cash) %>% arrange(desc(cash))
+```
+To utilize the pivot function, I observed the cash flow of the athletics department (financial aid for student-athletes, total revenue, and total expenses) in relation to the estimated amount of tuition collected for the 2018-2019 school year. At Western College, both the total revenue and total expenses are over half the estimated total tuition & fees. The University of Texas at Austin athletics revenue is 0.402 of the estimated total tuition & fees collected.
+
+# Visualizing {.tabset}
+
+## Correlation Heatmap   
+```{R}
+# Correlation heat map
+cortexas <- texas %>% select_if(is.numeric) %>% rename("financial aid" = student_aid) %>% cor(use = "pair")
+
+# Correlation Tidy
+texascor <- cortexas %>% as.data.frame %>% rownames_to_column("var1") %>% pivot_longer(-1,names_to="var2",values_to="correlation")
+
+# Visualize a correlation matrix
+texascor %>% ggplot(aes(var1, var2, fill = correlation)) +
+  geom_tile() +
+# Custom colors
+  scale_fill_gradient2(low = "goldenrod1", mid = "sienna1", high = "dodgerblue4") +
+# Overlay text
+  geom_text(aes(label = round(correlation,2)),color = "black", size = 4) + 
+#Flips x-axis
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+# Give square shape
+  coord_fixed() + 
+# Change labels and text
+  labs(x = NULL, y = NULL, fill = "Correlation", title = "Correlations Between Numerical Variables") + theme(text = element_text(family ="Comic Sans MS")) 
+  
+```
+Out of all the numeric variables, revenue and expenses had the strongest correlation (0.996). Financial aid provided to student-athletes was also strongly correlated to revenue (0.877) and expenses (0.899). The correlation between student aid and profit (0.625), however, was lower. Financial aid to student-athletes is less dependent on the athletics department's profit. The student aid heavily depends on the department's expenses, which is understandable. The weakest correlation is between tuition and athletics profit (0.233). 
+
+## Scatterplot
+```{R}
+# Visualization of total students, athletic expenses, and athletic association
+ggplot(texas2, aes(students, expense, color = association)) + geom_point(size = 3) +
+# Change y-axis format
+ scale_y_continuous(labels = unit_format(unit = "M", scale = 1e-6), breaks = seq(0,175000000,25000000)) + 
+# Change themes
+  theme_calc()+ scale_colour_calc() +
+# Change labels and text
+  labs(x = "Number of Students", y = "Athletic Expenses ($)", title ="Athletic Expenses vs. Student Population", color = "Athletic\nAssociation") + theme(plot.title = element_text(hjust = 0.5))
+```
+PC1 explains the 0.751 of the variance. PC1 is the general strength axis because all loadings have similar signs and magnitude. If PC1 is high, all the numerical variables will likely be high. In PC2, financial aid available for student-athletes, number of students, and tuition is positively loaded while revenue, expenses, and profit are negatively loaded. If PC2 is high, the tuition rate is high, and the cash flow variables are low.   
+
+## Bar Chart
+```{R}
+# Visualization of Financial Aid for Student Athletes, Athletic Association, and Type of Institution
+ggplot(texas2, aes(association, student_aid, fill = college), na.rm = TRUE) + geom_bar(stat ="summary", position = "dodge", fun.data = "mean_se",
+fun = "mean") + geom_errorbar(stat ="summary", position = "dodge", fun.data ="mean_se") +
+# Change labels
+  scale_y_continuous(name= "Financial Aid ($)", labels = unit_format(unit = "M", scale = 1e-6)) + ggtitle("Financial Aid for Student Athletes") + xlab ("Athletics Association") + theme(plot.title = element_text(hjust = 0.5)) + theme(text=element_text(family="Comic Sans MS")) +
+# Change colors
+  scale_fill_manual(breaks = c("2-year","4-year or above"), values = c("deepskyblue4","sienna3")) +
+# Change legend
+  theme(legend.position ="bottom") + labs(fill = "Institution")
+```
+The financial aid for student-athletes is the greatest for schools in NCAA. NJCAA four-year colleges provide the second most financial aid.  NJCAA two-year institutions provide the third-largest amount. Schools not part of the known athletics association provide the fourth-largest amount while NAIA institutions give out the least amount of aid. 4-year institutions can reward more money to their student-athletes except for NAIA schools compared to two-year institutions. 
+
+
+# Principal Component Analysis (PCA) {.tabset}
+
+## Prepare the data 
+```{R}
+texas_n <- texas2 %>% select_if(is.numeric) %>% scale(center = TRUE, scale = TRUE)
+rownames(texas_n)<-texas$institution
+```
+The numeric variables in the *texas* dataset were selected, centered, and scaled. The data had no transformations performed on it. 
+
+## Perform PCA
+```{R}
+# Perform PCA
+texas_pca<-princomp(texas_n)
+names(texas_pca)
+```
+A PCA was performed by using the function *princomp* on the prepared data. 
+
+## Choose the number of PCs
+```{R}
+# Square to convert SDs to eigenvalues
+eigval<-(texas_pca$sdev)^2 
+
+# Proportion of variance explained by each PC
+varprop=round(eigval/sum(eigval), 2) 
+
+# Scree plot
+ggplot() + geom_bar(aes(y=varprop, x = 1:6), stat="identity") + xlab("") + geom_path(aes(y = varprop, x = 1:6)) +
+geom_text(aes(x = 1:6, y=varprop, label = round(varprop, 2)), vjust = 1, col="darksalmon", size = 4) + scale_y_continuous(breaks = seq(0, .6, .2), labels = percent) + scale_x_continuous(breaks=1:10)
+
+# Eigen values
+eigval 
+```
+To decide the number of principal components to keep, a scree plot was created. A scree plot is a visualization tool to view the proportion of variance explained by each PC. I picked the PCs until the scree plots flattens or until the cumulative proportion of variance is >80%. Only 1 PCs have eigenvalues greater than 1 (but PC2 is close). I chose to include PC1 and PC2.   
+
+## Interpret PCs
+```{R}
+summary(texas_pca, loadings=T)
+```
+PC1 explains the 0.751 of the variance. PC1 is the general strength axis because all loadings have similar signs and magnitude. If PC1 is high, all the numerical variables will likely be high. 
+PC2 explains the 0.149 of the variance. In PC2, financial aid available for student-athletes, number of students, and tuition are positively loaded while revenue, expenses, and profit are negatively loaded. If PC2 is high, the tuition rate is high but the cash flow of the athletic department is low. 
+
+## Plotting New PCS scores
+```{R}
+texas2 %>% mutate(PC1=texas_pca$scores[, 1], PC2 = texas_pca$scores[, 2]) %>%
+ggplot(aes(PC1, PC2, color = association, shape = college)) + geom_point() + coord_fixed() + theme(legend.position ="bottom")
+```
+According to the plot, most institutions have a low PC1 score and a high PC2 score. This means most institutions have relatively low values for the numeric variables compared to the outliers. The outliers with higher PC1 scores are all NCAA four-year institutions. The NCAA schools have the largest range in PC1 scores. The PC1 and PC2 scores are concentrated for NAIA, NJCAA, and other schools. PC1 can be used to separate four-year institutions (higher scores) from two-year institutions (lower scores).
+
+## Biplot
+```{R}
+fviz_pca_biplot(texas_pca, label = "var", habillage = texas2$association) + theme_wsj()+ scale_colour_wsj() + labs(title ="Biplot of Variables and Institutions", x = "PC1 (75.1%)", y = "PC2 (14.9%)") + xlim(-2, 12) + ylim (-5, 3) + theme(plot.title = element_text(hjust = 0.5, size = 18)) + theme(legend.position ="bottom", legend.title = element_text(size = 14), legend.text = element_text(size = 10))
+```
+A biplot was also created to combine a loadings plot with a PC plot. The observations match those made previously. 
+
+<P style="page-break-before: always">
+\newpage
+...
+
+
+
+
+

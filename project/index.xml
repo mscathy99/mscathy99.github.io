@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Projects on Cathy Nguyen</title>
+    <link>/project/</link>
+    <description>Recent content in Projects on Cathy Nguyen</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language>
+    <lastBuildDate>Fri, 07 May 2021 00:00:00 +0000</lastBuildDate><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Project 2: Modeling, Testing, and Predicting</title>
+      <link>/project/project2/</link>
+      <pubDate>Fri, 07 May 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project2/</guid>
+      <description>IntroductionThe Center of Systemic Peace (CSP) engages in political violence research and continually monitors political behavior in world states (independent countries with a population greater than 500,000). The Integrated Network for Societal Conflict Research (INSCR) coordinates the information produced y the CSP. I combined two of their datasets, Forcibly Displaced Populations and Major Episodes of Political Violence, for information in the year 2001. Both datasets identified countries by a standard 3-letter alpha country identifier code.</description>
+    </item>
+    
+    <item>
+      <title>Project 1: Exploratory Data Analysis</title>
+      <link>/project/project1/</link>
+      <pubDate>Sun, 04 Apr 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project1/</guid>
+      <description>IntroductionThe college sports industry is immense. In 2019, the NCAA athletics departments generated a total of $18.9 billion in 2019. For this project, I evaluated the athletic departments of both public two-year and four-year institutions in Texas. The Equity in Athletics Data Analysis (EADA) provides athletics data from all co-educational postsecondary institutions that receive Title IV funding and have an intercollegiate athletics program. The EADA used was for the 2018-2019 academic school year.</description>
+    </item>
+    
+  </channel>
+</rss>

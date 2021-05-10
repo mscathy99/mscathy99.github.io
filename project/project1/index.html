@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Cathy Nguyen" />
+    
+    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
+    <title>Project 1: Exploratory Data Analysis</title>
+    <meta name="generator" content="Hugo 0.83.1" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="/post/">BLOG</a></li>
+        
+        <li><a href="/projects/">PROJECTS</a></li>
+        
+        <li><a href="/resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="/project/project1/">Project 1: Exploratory Data Analysis</a></strong>
+          </h3>
+        </div>
+ 
+<div class="blog-title">
+          <h4>
+         April 4, 2021 
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>The college sports industry is immense. In 2019, the NCAA athletics departments generated a total of $18.9 billion in 2019. For this project, I evaluated the athletic departments of both public two-year and four-year institutions in Texas. The Equity in Athletics Data Analysis (EADA) provides athletics data from all co-educational postsecondary institutions that receive Title IV funding and have an intercollegiate athletics program. The EADA used was for the 2018-2019 academic school year. The EADA dataset contains thousands of variables related to collegiate athletics. For this project, I specifically looked at the total expenses, total revenue, and financial aid provided to student-athletes for each school’s athletics department. I also retrieved the name of postsecondary institution, city, and NCAA or NCJAA division classification for each school from the EADA dataset. The second dataset used in the project comes from the Texas Higher Education Coordinating Board (THECB). Their 2019 almanac gives a profile of state and institutional performance and characteristics. For each institution, the number of students and average tuition and fees can be known using this dataset. I predict that schools with more students and more expensive tuition will also see greater expenses and revenues from their athletics departments.</p>
+<p>[Equity in Athletics Data Analysis (EADA)] (<a href="https://ope.ed.gov/athletics/#/datafile/list" class="uri">https://ope.ed.gov/athletics/#/datafile/list</a>)</p>
+<pre class="r"><code>## Dataset 1: EADA for 2018-2019 School Year
+EADA &lt;- suppressMessages(read_excel(&quot;EADA_2019.xlsx&quot;))
+# Filter out Texas schools and selected variables
+Texas &lt;- EADA %&gt;% filter(state_cd == &quot;TX&quot;) %&gt;% filter(str_detect(sector_name, 
+    &quot;Public&quot;)) %&gt;% select(institution = institution_name, city = city_txt, 
+    sector = sector_name, class = classification_name, student_aid = STUDENTAID_TOTAL, 
+    revenue = GRND_TOTAL_REVENUE, expense = GRND_TOTAL_EXPENSE)
+glimpse(Texas)</code></pre>
+<pre><code>## Rows: 72
+## Columns: 7
+## $ institution &lt;chr&gt; &quot;Alvin Community College&quot;, &quot;Angelina College&quot;, &quot;Angelo Sta~
+## $ city        &lt;chr&gt; &quot;Alvin&quot;, &quot;Lufkin&quot;, &quot;San Angelo&quot;, &quot;Beeville&quot;, &quot;Brenham&quot;, &quot;F~
+## $ sector      &lt;chr&gt; &quot;Public, 2-year&quot;, &quot;Public, 2-year&quot;, &quot;Public, 4-year or abo~
+## $ class       &lt;chr&gt; &quot;NJCAA Division I&quot;, &quot;NJCAA Division I&quot;, &quot;NCAA Division II&quot;~
+## $ student_aid &lt;dbl&gt; 180062, 564188, 2489966, 160800, 1173598, 0, 0, 657199, 38~
+## $ revenue     &lt;dbl&gt; 518559, 1329581, 7488621, 1204249, 3422987, 556941, 553012~
+## $ expense     &lt;dbl&gt; 518559, 1329581, 7192146, 1111666, 3416941, 556941, 553012~</code></pre>
+<p>[Texas Public Higher Educaiton Almanac (2019)] (<a href="https://www.highered.texas.gov/data-reports/texas-public-higher-education-almanac/" class="uri">https://www.highered.texas.gov/data-reports/texas-public-higher-education-almanac/</a>)</p>
+<pre class="r"><code>## Dataset 2: 30x60TX Almanac Data (2019)
+
+# Data for Texas Public Two-Year Institution
+Two &lt;- suppressMessages(read_excel(&quot;60x30TX.xlsx&quot;, sheet = &quot;2-year 2019&quot;))
+two &lt;- Two %&gt;% select(institution = `2-year public institution`, 
+    students = Total...10, tuition = `Average tuition &amp; fees`) %&gt;% 
+    slice(1:(n() - 3))
+
+# Data for Texas Public Four-Year institution
+Four &lt;- suppressMessages(read_excel(&quot;60x30TX.xlsx&quot;, sheet = &quot;4-year 2019&quot;))
+four &lt;- Four %&gt;% select(institution = `4-year public institution`, 
+    students = `Total enrollment`, tuition = `Average tuition &amp; fees`) %&gt;% 
+    slice(1:(n() - 5))
+
+# Combine all almanac data into one dataset
+almanac &lt;- rbind(two, four)
+
+glimpse(almanac)</code></pre>
+<pre><code>## Rows: 125
+## Columns: 3
+## $ institution &lt;chr&gt; &quot;Alamo Community College District&quot;, &quot;Alamo CCD-Northeast L~
+## $ students    &lt;dbl&gt; 52468, 5510, 16293, 9852, 17573, 11590, 5645, 9844, 4819, ~
+## $ tuition     &lt;dbl&gt; 2760, 2760, 2760, 2760, 2760, 2760, 1998, 2670, 2730, 2550~</code></pre>
+</div>
+<div id="joinmerging" class="section level1">
+<h1>Join/Merging</h1>
+<pre class="r"><code># Unique entries for separate dataset
+nrow(Texas)</code></pre>
+<pre><code>## [1] 72</code></pre>
+<pre class="r"><code>nrow(almanac)</code></pre>
+<pre><code>## [1] 125</code></pre>
+<pre class="r"><code># Joining the datasets
+texas &lt;- left_join(Texas, almanac, by = &quot;institution&quot;)
+glimpse(texas)</code></pre>
+<pre><code>## Rows: 72
+## Columns: 9
+## $ institution &lt;chr&gt; &quot;Alvin Community College&quot;, &quot;Angelina College&quot;, &quot;Angelo Sta~
+## $ city        &lt;chr&gt; &quot;Alvin&quot;, &quot;Lufkin&quot;, &quot;San Angelo&quot;, &quot;Beeville&quot;, &quot;Brenham&quot;, &quot;F~
+## $ sector      &lt;chr&gt; &quot;Public, 2-year&quot;, &quot;Public, 2-year&quot;, &quot;Public, 4-year or abo~
+## $ class       &lt;chr&gt; &quot;NJCAA Division I&quot;, &quot;NJCAA Division I&quot;, &quot;NCAA Division II&quot;~
+## $ student_aid &lt;dbl&gt; 180062, 564188, 2489966, 160800, 1173598, 0, 0, 657199, 38~
+## $ revenue     &lt;dbl&gt; 518559, 1329581, 7488621, 1204249, 3422987, 556941, 553012~
+## $ expense     &lt;dbl&gt; 518559, 1329581, 7192146, 1111666, 3416941, 556941, 553012~
+## $ students    &lt;dbl&gt; 5645, 4819, 10242, 4633, 19113, 11065, 6939, 3358, 1633, 1~
+## $ tuition     &lt;dbl&gt; 1998, 2730, 8489, 2646, 3630, 1770, 1770, 3810, 3030, 2730~</code></pre>
+<p>The join performed was a left join. The left join will include all of the data in the EADA dataset after selecting all the public Texas schools and variables of interest (<em>Texas</em>). All 72 observations in the <em>Texas</em> dataset are in the final joined dataset <em>texas</em>.</p>
+<p>The dataset from the 30x60TX Texas Higher Education Almanac (<em>almanac</em>) adds two variables to our joined dataset: students enrolled (<em>students</em>) and average tuition and fees (<em>tuition</em>). All 72 schools found in the <em>Texas</em> dataset had a counterpart in the <em>almanac</em> dataset.</p>
+<pre class="r"><code># Almanac entries not included
+almanac %&gt;% filter(!(institution %in% texas$institution)) %&gt;% 
+    summarize(unique(institution))</code></pre>
+<pre><code>## # A tibble: 53 x 1
+##    `unique(institution)`               
+##    &lt;chr&gt;                               
+##  1 Alamo Community College District    
+##  2 Alamo CCD-Northeast Lakeview College
+##  3 Alamo CCD-Northwest Vista College   
+##  4 Alamo CCD-Palo Alto College         
+##  5 Alamo CCD-San Antonio College       
+##  6 Alamo CCD-St. Philip’s College      
+##  7 Amarillo College                    
+##  8 Austin Community College            
+##  9 Brazosport College                  
+## 10 Central Texas College               
+## # ... with 43 more rows</code></pre>
+<p>There were 125 schools in the <em>almanac</em> dataset, so 53 schools from the <em>almanac</em> dataset are excluded. These two-year and four-year institutions that are left out could lack an athletics department. Some community colleges are also a part of a district with an athletics department. In those situations, the district as a whole is considered instead of the specific campuses.</p>
+</div>
+<div id="wrangling" class="section level1 tabset">
+<h1>Wrangling</h1>
+<div id="new-variable-profit" class="section level2">
+<h2>New Variable: Profit</h2>
+<pre class="r"><code># Create new variable for the profit of the athletics
+# department
+texas &lt;- texas %&gt;% na.omit() %&gt;% mutate(profit = revenue - expense)
+glimpse(texas)</code></pre>
+<pre><code>## Rows: 72
+## Columns: 10
+## $ institution &lt;chr&gt; &quot;Alvin Community College&quot;, &quot;Angelina College&quot;, &quot;Angelo Sta~
+## $ city        &lt;chr&gt; &quot;Alvin&quot;, &quot;Lufkin&quot;, &quot;San Angelo&quot;, &quot;Beeville&quot;, &quot;Brenham&quot;, &quot;F~
+## $ sector      &lt;chr&gt; &quot;Public, 2-year&quot;, &quot;Public, 2-year&quot;, &quot;Public, 4-year or abo~
+## $ class       &lt;chr&gt; &quot;NJCAA Division I&quot;, &quot;NJCAA Division I&quot;, &quot;NCAA Division II&quot;~
+## $ student_aid &lt;dbl&gt; 180062, 564188, 2489966, 160800, 1173598, 0, 0, 657199, 38~
+## $ revenue     &lt;dbl&gt; 518559, 1329581, 7488621, 1204249, 3422987, 556941, 553012~
+## $ expense     &lt;dbl&gt; 518559, 1329581, 7192146, 1111666, 3416941, 556941, 553012~
+## $ students    &lt;dbl&gt; 5645, 4819, 10242, 4633, 19113, 11065, 6939, 3358, 1633, 1~
+## $ tuition     &lt;dbl&gt; 1998, 2730, 8489, 2646, 3630, 1770, 1770, 3810, 3030, 2730~
+## $ profit      &lt;dbl&gt; 0, 0, 296475, 92583, 6046, 0, 0, 0, 0, 0, 0, 0, 93522, 120~</code></pre>
+<p>The new variable is called profit. The profit for each college or university athletic department is equal to the total revenue minus the total.</p>
+</div>
+<div id="correlation-between-numeric-variables" class="section level2">
+<h2>Correlation Between Numeric Variables</h2>
+<pre class="r"><code>texas %&gt;% select(student_aid:profit) %&gt;% cor()</code></pre>
+<pre><code>##             student_aid   revenue   expense  students   tuition    profit
+## student_aid   1.0000000 0.8765368 0.8985374 0.7671425 0.6799466 0.6252847
+## revenue       0.8765368 1.0000000 0.9965648 0.7409214 0.4679061 0.8781729
+## expense       0.8985374 0.9965648 1.0000000 0.7657877 0.4971663 0.8355414
+## students      0.7671425 0.7409214 0.7657877 1.0000000 0.5253872 0.4923300
+## tuition       0.6799466 0.4679061 0.4971663 0.5253872 1.0000000 0.2326136
+## profit        0.6252847 0.8781729 0.8355414 0.4923300 0.2326136 1.0000000</code></pre>
+<p>The correlation was calculated for each pair of numeric variables. The correlation will be further discussed with the correlation heatmap.</p>
+</div>
+<div id="numeric-variables" class="section level2">
+<h2>Numeric Variables</h2>
+<pre class="r"><code># Arranging by tuition and revenuce
+texas %&gt;% select(institution, tuition, revenue) %&gt;% arrange(desc(tuition))</code></pre>
+<pre><code>## # A tibble: 72 x 3
+##    institution                          tuition   revenue
+##    &lt;chr&gt;                                  &lt;dbl&gt;     &lt;dbl&gt;
+##  1 The University of Texas at Dallas      13034   2692465
+##  2 University of North Texas              11514  40758584
+##  3 Texas Tech University                  11046  86442709
+##  4 Texas State University                 10920  36634363
+##  5 University of Houston                  10890  68285574
+##  6 Prairie View A&amp;M University            10534  13287492
+##  7 The University of Texas at Austin      10398 215829101
+##  8 Texas A&amp;M University-College Station   10316 160101611
+##  9 Stephen F. Austin State University     10288  17493553
+## 10 The University of Texas at Arlington   10250  16977211
+## # ... with 62 more rows</code></pre>
+<pre class="r"><code>texas %&gt;% select(institution, expense, revenue) %&gt;% arrange(desc(revenue))</code></pre>
+<pre><code>## # A tibble: 72 x 3
+##    institution                              expense   revenue
+##    &lt;chr&gt;                                      &lt;dbl&gt;     &lt;dbl&gt;
+##  1 The University of Texas at Austin      175172054 215829101
+##  2 Texas A&amp;M University-College Station   145678287 160101611
+##  3 Texas Tech University                   83701980  86442709
+##  4 University of Houston                   68285574  68285574
+##  5 University of North Texas               39908256  40758584
+##  6 Texas State University                  36634363  36634363
+##  7 The University of Texas at El Paso      33313800  33740768
+##  8 The University of Texas at San Antonio  31155038  31155038
+##  9 Lamar University                        18525161  18643060
+## 10 Sam Houston State University            17780296  18429638
+## # ... with 62 more rows</code></pre>
+<pre class="r"><code>texas %&gt;% select(institution, tuition, revenue) %&gt;% arrange(-desc(tuition))</code></pre>
+<pre><code>## # A tibble: 72 x 3
+##    institution                              tuition revenue
+##    &lt;chr&gt;                                      &lt;dbl&gt;   &lt;dbl&gt;
+##  1 Collin County Community College District    1520  697199
+##  2 Brookhaven College                          1770  556941
+##  3 Cedar Valley College                        1770  553012
+##  4 Eastfield College                           1770  532608
+##  5 Mountain View College                       1770  678886
+##  6 North Lake College                          1770  369536
+##  7 Richland College                            1770  557412
+##  8 San Jacinto Community College               1860 1241878
+##  9 Alvin Community College                     1998  518559
+## 10 Galveston College                           2050  594228
+## # ... with 62 more rows</code></pre>
+<pre class="r"><code>texas %&gt;% select(institution, expense, revenue) %&gt;% arrange(-desc(revenue))</code></pre>
+<pre><code>## # A tibble: 72 x 3
+##    institution                     expense revenue
+##    &lt;chr&gt;                             &lt;dbl&gt;   &lt;dbl&gt;
+##  1 Southwest Texas Junior College   284483  284483
+##  2 North Lake College               343036  369536
+##  3 Alvin Community College          518559  518559
+##  4 Eastfield College                520569  532608
+##  5 Cedar Valley College             553012  553012
+##  6 Brookhaven College               556941  556941
+##  7 Richland College                 557412  557412
+##  8 Galveston College                594228  594228
+##  9 Lamar State College-Port Arthur  630315  630315
+## 10 Mountain View College            678886  678886
+## # ... with 62 more rows</code></pre>
+<pre class="r"><code># Summary statistics (mean, sd, min, and max) of all numeric
+# variables without grouping
+texas %&gt;% select(student_aid:profit) %&gt;% summarize_all(funs(mean, 
+    sd))</code></pre>
+<pre><code>## # A tibble: 1 x 12
+##   student_aid_mean revenue_mean expense_mean students_mean tuition_mean
+##              &lt;dbl&gt;        &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt;        &lt;dbl&gt;
+## 1         1869724.    12997502.    12129422.        13527.        5557.
+## # ... with 7 more variables: profit_mean &lt;dbl&gt;, student_aid_sd &lt;dbl&gt;,
+## #   revenue_sd &lt;dbl&gt;, expense_sd &lt;dbl&gt;, students_sd &lt;dbl&gt;, tuition_sd &lt;dbl&gt;,
+## #   profit_sd &lt;dbl&gt;</code></pre>
+<pre class="r"><code>texas %&gt;% select(student_aid:profit) %&gt;% summarize_all(funs(min, 
+    max))</code></pre>
+<pre><code>## # A tibble: 1 x 12
+##   student_aid_min revenue_min expense_min students_min tuition_min profit_min
+##             &lt;dbl&gt;       &lt;dbl&gt;       &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;
+## 1               0      284483      284483         1452        1520          0
+## # ... with 6 more variables: student_aid_max &lt;dbl&gt;, revenue_max &lt;dbl&gt;,
+## #   expense_max &lt;dbl&gt;, students_max &lt;dbl&gt;, tuition_max &lt;dbl&gt;, profit_max &lt;dbl&gt;</code></pre>
+<pre class="r"><code># Separate sector and class variables into more variables
+texas2 &lt;- suppressWarnings(texas %&gt;% separate(class, into = c(&quot;association&quot;, 
+    &quot;blank&quot;, &quot;division&quot;), sep = &quot; &quot;) %&gt;% separate(sector, into = c(&quot;public&quot;, 
+    &quot;college&quot;), sep = &quot;, &quot;))
+
+## NCAA Institutions
+texas2 %&gt;% filter(association == &quot;NCAA&quot;) %&gt;% select(student_aid:profit) %&gt;% 
+    summarize_all(funs(mean, sd))</code></pre>
+<pre><code>## # A tibble: 1 x 12
+##   student_aid_mean revenue_mean expense_mean students_mean tuition_mean
+##              &lt;dbl&gt;        &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt;        &lt;dbl&gt;
+## 1         4027086.    31091776.    28901293.        21893.        9605.
+## # ... with 7 more variables: profit_mean &lt;dbl&gt;, student_aid_sd &lt;dbl&gt;,
+## #   revenue_sd &lt;dbl&gt;, expense_sd &lt;dbl&gt;, students_sd &lt;dbl&gt;, tuition_sd &lt;dbl&gt;,
+## #   profit_sd &lt;dbl&gt;</code></pre>
+<p>The University of Texas at Dallas had the most expensive tuition and fees but is out of the top 30 for athletic revenue. The average profit for a collegiate athletic department in Texas is $868,080.2, but the standard deviation is large ($5,057,931). The mean tuition is $5557.389 with a standard deviation of $3508.23. However, when looking at the NCAA institutions, the averages are much higher. The average profit for an NCAA athletic department in Texas is $2,190,484 with a standard deviation of $8,018,654. The mean tuition for NCAA schools is $9604.536 with a standard deviation of $1267.585.</p>
+</div>
+<div id="grouping-by-categorical-variables" class="section level2">
+<h2>Grouping By Categorical Variables</h2>
+<pre class="r"><code># Distinct categories in categorical variables using
+# n_distinct
+texas %&gt;% select(1:4) %&gt;% summarize_all(n_distinct)</code></pre>
+<pre><code>## # A tibble: 1 x 4
+##   institution  city sector class
+##         &lt;int&gt; &lt;int&gt;  &lt;int&gt; &lt;int&gt;
+## 1          72    65      2     7</code></pre>
+<pre class="r"><code># Group by two- or four-year institutions and classification
+suppressMessages(texas %&gt;% group_by(sector, class) %&gt;% select(5:10) %&gt;% 
+    summarize_all(mean))</code></pre>
+<pre><code>## # A tibble: 8 x 8
+## # Groups:   sector [2]
+##   sector        class       student_aid  revenue expense students tuition profit
+##   &lt;chr&gt;         &lt;chr&gt;             &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;
+## 1 Public, 2-ye~ NJCAA Divi~     595970.   1.67e6  1.64e6    8146.   2926. 2.91e4
+## 2 Public, 2-ye~ NJCAA Divi~          0    5.41e5  5.35e5   11795    1770  6.42e3
+## 3 Public, 2-ye~ Other           428724    9.16e5  8.96e5    4832.   2659  1.98e4
+## 4 Public, 4-ye~ NAIA Divis~     261750    1.19e6  1.13e6    3224    8020  6.45e4
+## 5 Public, 4-ye~ NCAA Divis~    5885705.   4.97e7  4.60e7   30241.  10084  3.74e6
+## 6 Public, 4-ye~ NCAA Divis~    2059693.   7.44e6  7.31e6    9866.   8661. 1.35e5
+## 7 Public, 4-ye~ NCAA Divis~      16626.   2.69e6  2.60e6   13452    9878. 8.56e4
+## 8 Public, 4-ye~ NJCAA Divi~     813752    2.64e6  2.64e6    5259    2670  0.</code></pre>
+<pre class="r"><code>suppressMessages(texas %&gt;% group_by(sector, class) %&gt;% summarize(n = n()))</code></pre>
+<pre><code>## # A tibble: 8 x 3
+## # Groups:   sector [2]
+##   sector                  class                  n
+##   &lt;chr&gt;                   &lt;chr&gt;              &lt;int&gt;
+## 1 Public, 2-year          NJCAA Division I      33
+## 2 Public, 2-year          NJCAA Division III     6
+## 3 Public, 2-year          Other                  2
+## 4 Public, 4-year or above NAIA Division I        2
+## 5 Public, 4-year or above NCAA Division I       16
+## 6 Public, 4-year or above NCAA Division II       9
+## 7 Public, 4-year or above NCAA Division III      3
+## 8 Public, 4-year or above NJCAA Division I       1</code></pre>
+<p>I grouped my data by sector and by athletics classification. There are two different public sectors: two-year or four-year. There are seven different classifications found in our dataset: NJCAA Division I, NJCAA Division III, NAIA Division I, NCAA Division I, NCAA Division II, NCAA Division III, and Other. The mean for all numerical values was calculated after grouping. NCAA Division I schools, all 4-year institutions, had the greatest average for all numerical variables. NJCAA Division I schools have more financial aid on athletes than NCAA Division III schools despite a lower tuition rate and profit from the athletics departments.</p>
+</div>
+</div>
+<div id="tidying-rearranging-widelong" class="section level1">
+<h1>Tidying: Rearranging Wide/Long</h1>
+<pre class="r"><code>texas %&gt;% pivot_longer(student_aid:expense, names_to = &quot;flow&quot;) %&gt;% 
+    separate(class, into = c(&quot;association&quot;, &quot;blank&quot;, &quot;division&quot;), 
+        sep = &quot; &quot;) %&gt;% mutate(cash = value/(students * tuition)) %&gt;% 
+    select(institution, association, division, flow, cash) %&gt;% 
+    arrange(desc(cash))</code></pre>
+<pre><code>## # A tibble: 216 x 5
+##    institution                          association division flow     cash
+##    &lt;chr&gt;                                &lt;chr&gt;       &lt;chr&gt;    &lt;chr&gt;   &lt;dbl&gt;
+##  1 Western Texas College                NJCAA       I        revenue 0.546
+##  2 Western Texas College                NJCAA       I        expense 0.523
+##  3 The University of Texas at Austin    NCAA        I        revenue 0.402
+##  4 Ranger College                       NJCAA       I        revenue 0.380
+##  5 Ranger College                       NJCAA       I        expense 0.380
+##  6 The University of Texas at Austin    NCAA        I        expense 0.326
+##  7 Frank Phillips College               NJCAA       I        revenue 0.245
+##  8 Frank Phillips College               NJCAA       I        expense 0.245
+##  9 Texas A&amp;M University-College Station NCAA        I        revenue 0.244
+## 10 Panola College                       Other       &lt;NA&gt;     revenue 0.239
+## # ... with 206 more rows</code></pre>
+<p>To utilize the pivot function, I observed the cash flow of the athletics department (financial aid for student-athletes, total revenue, and total expenses) in relation to the estimated amount of tuition collected for the 2018-2019 school year. At Western College, both the total revenue and total expenses are over half the estimated total tuition &amp; fees. The University of Texas at Austin athletics revenue is 0.402 of the estimated total tuition &amp; fees collected.</p>
+</div>
+<div id="visualizing" class="section level1 tabset">
+<h1>Visualizing</h1>
+<div id="correlation-heatmap" class="section level2">
+<h2>Correlation Heatmap</h2>
+<pre class="r"><code># Correlation heat map
+cortexas &lt;- texas %&gt;% select_if(is.numeric) %&gt;% rename(`financial aid` = student_aid) %&gt;% 
+    cor(use = &quot;pair&quot;)
+
+# Correlation Tidy
+texascor &lt;- cortexas %&gt;% as.data.frame %&gt;% rownames_to_column(&quot;var1&quot;) %&gt;% 
+    pivot_longer(-1, names_to = &quot;var2&quot;, values_to = &quot;correlation&quot;)
+
+# Visualize a correlation matrix
+texascor %&gt;% ggplot(aes(var1, var2, fill = correlation)) + geom_tile() + 
+    # Custom colors
+scale_fill_gradient2(low = &quot;goldenrod1&quot;, mid = &quot;sienna1&quot;, high = &quot;dodgerblue4&quot;) + 
+    # Overlay text
+geom_text(aes(label = round(correlation, 2)), color = &quot;black&quot;, 
+    size = 4) + # Flips x-axis
+theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Give square shape
+coord_fixed() + # Change labels and text
+labs(x = NULL, y = NULL, fill = &quot;Correlation&quot;, title = &quot;Correlations Between Numerical Variables&quot;) + 
+    theme(text = element_text(family = &quot;Comic Sans MS&quot;))</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" />
+Out of all the numeric variables, revenue and expenses had the strongest correlation (0.996). Financial aid provided to student-athletes was also strongly correlated to revenue (0.877) and expenses (0.899). The correlation between student aid and profit (0.625), however, was lower. Financial aid to student-athletes is less dependent on the athletics department’s profit. The student aid heavily depends on the department’s expenses, which is understandable. The weakest correlation is between tuition and athletics profit (0.233).</p>
+</div>
+<div id="scatterplot" class="section level2">
+<h2>Scatterplot</h2>
+<pre class="r"><code># Visualization of total students, athletic expenses, and
+# athletic association
+ggplot(texas2, aes(students, expense, color = association)) + 
+    geom_point(size = 3) + # Change y-axis format
+scale_y_continuous(labels = unit_format(unit = &quot;M&quot;, scale = 1e-06), 
+    breaks = seq(0, 1.75e+08, 2.5e+07)) + # Change themes
+theme_calc() + scale_colour_calc() + # Change labels and text
+labs(x = &quot;Number of Students&quot;, y = &quot;Athletic Expenses ($)&quot;, title = &quot;Athletic Expenses vs. Student Population&quot;, 
+    color = &quot;Athletic\nAssociation&quot;) + theme(plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" />
+PC1 explains the 0.751 of the variance. PC1 is the general strength axis because all loadings have similar signs and magnitude. If PC1 is high, all the numerical variables will likely be high. In PC2, financial aid available for student-athletes, number of students, and tuition is positively loaded while revenue, expenses, and profit are negatively loaded. If PC2 is high, the tuition rate is high, and the cash flow variables are low.</p>
+</div>
+<div id="bar-chart" class="section level2">
+<h2>Bar Chart</h2>
+<pre class="r"><code># Visualization of Financial Aid for Student Athletes,
+# Athletic Association, and Type of Institution
+ggplot(texas2, aes(association, student_aid, fill = college), 
+    na.rm = TRUE) + geom_bar(stat = &quot;summary&quot;, position = &quot;dodge&quot;, 
+    fun.data = &quot;mean_se&quot;, fun = &quot;mean&quot;) + geom_errorbar(stat = &quot;summary&quot;, 
+    position = &quot;dodge&quot;, fun.data = &quot;mean_se&quot;) + # Change labels
+scale_y_continuous(name = &quot;Financial Aid ($)&quot;, labels = unit_format(unit = &quot;M&quot;, 
+    scale = 1e-06)) + ggtitle(&quot;Financial Aid for Student Athletes&quot;) + 
+    xlab(&quot;Athletics Association&quot;) + theme(plot.title = element_text(hjust = 0.5)) + 
+    theme(text = element_text(family = &quot;Comic Sans MS&quot;)) + # Change colors
+scale_fill_manual(breaks = c(&quot;2-year&quot;, &quot;4-year or above&quot;), values = c(&quot;deepskyblue4&quot;, 
+    &quot;sienna3&quot;)) + # Change legend
+theme(legend.position = &quot;bottom&quot;) + labs(fill = &quot;Institution&quot;)</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" />
+The financial aid for student-athletes is the greatest for schools in NCAA. NJCAA four-year colleges provide the second most financial aid. NJCAA two-year institutions provide the third-largest amount. Schools not part of the known athletics association provide the fourth-largest amount while NAIA institutions give out the least amount of aid. 4-year institutions can reward more money to their student-athletes except for NAIA schools compared to two-year institutions.</p>
+</div>
+</div>
+<div id="principal-component-analysis-pca" class="section level1 tabset">
+<h1>Principal Component Analysis (PCA)</h1>
+<div id="prepare-the-data" class="section level2">
+<h2>Prepare the data</h2>
+<pre class="r"><code>texas_n &lt;- texas2 %&gt;% select_if(is.numeric) %&gt;% scale(center = TRUE, 
+    scale = TRUE)
+rownames(texas_n) &lt;- texas$institution</code></pre>
+<p>The numeric variables in the <em>texas</em> dataset were selected, centered, and scaled. The data had no transformations performed on it.</p>
+</div>
+<div id="perform-pca" class="section level2">
+<h2>Perform PCA</h2>
+<pre class="r"><code># Perform PCA
+texas_pca &lt;- princomp(texas_n)
+names(texas_pca)</code></pre>
+<pre><code>## [1] &quot;sdev&quot;     &quot;loadings&quot; &quot;center&quot;   &quot;scale&quot;    &quot;n.obs&quot;    &quot;scores&quot;   &quot;call&quot;</code></pre>
+<p>A PCA was performed by using the function <em>princomp</em> on the prepared data.</p>
+</div>
+<div id="choose-the-number-of-pcs" class="section level2">
+<h2>Choose the number of PCs</h2>
+<pre class="r"><code># Square to convert SDs to eigenvalues
+eigval &lt;- (texas_pca$sdev)^2
+
+# Proportion of variance explained by each PC
+varprop = round(eigval/sum(eigval), 2)
+
+# Scree plot
+ggplot() + geom_bar(aes(y = varprop, x = 1:6), stat = &quot;identity&quot;) + 
+    xlab(&quot;&quot;) + geom_path(aes(y = varprop, x = 1:6)) + geom_text(aes(x = 1:6, 
+    y = varprop, label = round(varprop, 2)), vjust = 1, col = &quot;darksalmon&quot;, 
+    size = 4) + scale_y_continuous(breaks = seq(0, 0.6, 0.2), 
+    labels = percent) + scale_x_continuous(breaks = 1:10)</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Eigen values
+eigval</code></pre>
+<pre><code>##       Comp.1       Comp.2       Comp.3       Comp.4       Comp.5       Comp.6 
+## 4.446114e+00 8.818889e-01 3.837175e-01 1.586843e-01 4.626242e-02 4.440892e-16</code></pre>
+<p>To decide the number of principal components to keep, a scree plot was created. A scree plot is a visualization tool to view the proportion of variance explained by each PC. I picked the PCs until the scree plots flattens or until the cumulative proportion of variance is &gt;80%. Only 1 PCs have eigenvalues greater than 1 (but PC2 is close). I chose to include PC1 and PC2.</p>
+</div>
+<div id="interpret-pcs" class="section level2">
+<h2>Interpret PCs</h2>
+<pre class="r"><code>summary(texas_pca, loadings = T)</code></pre>
+<pre><code>## Importance of components:
+##                           Comp.1    Comp.2     Comp.3     Comp.4      Comp.5
+## Standard deviation     2.1085809 0.9390894 0.61944932 0.39835198 0.215087007
+## Proportion of Variance 0.7514558 0.1490516 0.06485366 0.02681988 0.007819001
+## Cumulative Proportion  0.7514558 0.9005075 0.96536112 0.99218100 1.000000000
+##                              Comp.6
+## Standard deviation     2.107342e-08
+## Proportion of Variance 7.505733e-17
+## Cumulative Proportion  1.000000e+00
+## 
+## Loadings:
+##             Comp.1 Comp.2 Comp.3 Comp.4 Comp.5 Comp.6
+## student_aid  0.442  0.187         0.664  0.573       
+## revenue      0.458 -0.223         0.106 -0.406  0.749
+## expense      0.460 -0.162         0.206 -0.542 -0.652
+## students     0.391  0.200 -0.801 -0.389  0.119       
+## tuition      0.296  0.745  0.481 -0.340              
+## profit       0.378 -0.541  0.351 -0.488  0.436 -0.113</code></pre>
+<p>PC1 explains the 0.751 of the variance. PC1 is the general strength axis because all loadings have similar signs and magnitude. If PC1 is high, all the numerical variables will likely be high.
+PC2 explains the 0.149 of the variance. In PC2, financial aid available for student-athletes, number of students, and tuition are positively loaded while revenue, expenses, and profit are negatively loaded. If PC2 is high, the tuition rate is high but the cash flow of the athletic department is low.</p>
+</div>
+<div id="plotting-new-pcs-scores" class="section level2">
+<h2>Plotting New PCS scores</h2>
+<pre class="r"><code>texas2 %&gt;% mutate(PC1 = texas_pca$scores[, 1], PC2 = texas_pca$scores[, 
+    2]) %&gt;% ggplot(aes(PC1, PC2, color = association, shape = college)) + 
+    geom_point() + coord_fixed() + theme(legend.position = &quot;bottom&quot;)</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-17-1.png" width="672" style="display: block; margin: auto;" />
+According to the plot, most institutions have a low PC1 score and a high PC2 score. This means most institutions have relatively low values for the numeric variables compared to the outliers. The outliers with higher PC1 scores are all NCAA four-year institutions. The NCAA schools have the largest range in PC1 scores. The PC1 and PC2 scores are concentrated for NAIA, NJCAA, and other schools. PC1 can be used to separate four-year institutions (higher scores) from two-year institutions (lower scores).</p>
+</div>
+<div id="biplot" class="section level2">
+<h2>Biplot</h2>
+<pre class="r"><code>fviz_pca_biplot(texas_pca, label = &quot;var&quot;, habillage = texas2$association) + 
+    theme_wsj() + scale_colour_wsj() + labs(title = &quot;Biplot of Variables and Institutions&quot;, 
+    x = &quot;PC1 (75.1%)&quot;, y = &quot;PC2 (14.9%)&quot;) + xlim(-2, 12) + ylim(-5, 
+    3) + theme(plot.title = element_text(hjust = 0.5, size = 18)) + 
+    theme(legend.position = &quot;bottom&quot;, legend.title = element_text(size = 14), 
+        legend.text = element_text(size = 10))</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-18-1.png" width="672" style="display: block; margin: auto;" />
+A biplot was also created to combine a loadings plot with a PC plot. The observations match those made previously.</p>
+<P style="page-break-before: always">
+<div style="page-break-after: always;"></div>
+<p>…</p>
+</div>
+</div>
+
+            
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
+            </div>
+          </div>
+
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
+        </div>
+      </div>
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/docs.min.js"></script>
+<script src="/js/main.js"></script>
+
+<script src="/js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>

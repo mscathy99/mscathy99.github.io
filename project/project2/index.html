@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Cathy Nguyen" />
+    
+    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
+    <title>Project 2: Modeling, Testing, and Predicting</title>
+    <meta name="generator" content="Hugo 0.83.1" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="/post/">BLOG</a></li>
+        
+        <li><a href="/projects/">PROJECTS</a></li>
+        
+        <li><a href="/resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="/project/project2/">Project 2: Modeling, Testing, and Predicting</a></strong>
+          </h3>
+        </div>
+ 
+<div class="blog-title">
+          <h4>
+         May 7, 2021 
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>The Center of Systemic Peace (CSP) engages in political violence research and continually monitors political behavior in world states (independent countries with a population greater than 500,000). The Integrated Network for Societal Conflict Research (INSCR) coordinates the information produced y the CSP. I combined two of their datasets, Forcibly Displaced Populations and Major Episodes of Political Violence, for information in the year 2001. Both datasets identified countries by a standard 3-letter alpha country identifier code. From the Forcibly Displaced Populations dataset, I extracted the number of refugees (x1000) originating in a country (<em>source</em>), the number of internally displaced persons (x1000) in a country (<em>idp</em>), and the number of refugees (x1000) hosted by a world state (<em>host</em>) for the year 2001. From the Major Episodes of Political Violence (<em>MEVP</em>), I extracted the sum of all societal and interstate MEPV magnitude scores (<em>ACTTOT</em>), geopolitical region based on INSCR (<em>REGION</em>), and the sum of all societal and interstate MEPV magnitude scores for all bordering states (<em>TOTALAC</em>). Individual MEPV scores (not included in my final dataset) reported using a scale from 1 (lowest) to 10 (highest) unless there were no episodes (denoted by a 0 instead). ACTTOT and TOTALAC are the sums of individual MEPV for a country and neighboring countries. The new <em>regions</em> variable is the number of INSCR geopolitical regions the country contains. The final dataset for the project includes 158 countries.The numerical variables are <em>source</em>, <em>idp</em>, <em>host</em>, <em>ACTTOT</em>, and <em>TOTALAC</em>. The categorical variable is <em>regions</em>.</p>
+<pre class="r"><code># Forcibly Displaced Populations
+displacement &lt;- read_excel(&quot;Forcibly Displaced Populations.xlsx&quot;)
+d &lt;- displacement %&gt;% na.omit() %&gt;%  filter(year == &quot;2001&quot;) %&gt;% select(scode, country, source, idp, host)
+
+# Major Episodes of Political Violence
+violence &lt;- read_excel(&quot;Major Episodes of Political Violence.xlsx&quot;)
+v &lt;- violence %&gt;% filter(YEAR == &quot;2001&quot;) %&gt;% mutate(regions = ifelse(REGION == 99, 0, ifelse(REGION &lt; 10, 1, ifelse(REGION == 53, 3, ifelse(REGION == 41, 3, 2))))) %&gt;% select(SCODE, ACTOTAL, regions, TOTALAC) %&gt;% na.omit()
+
+# Full dataset
+data &lt;- inner_join(d, v, by = c(&quot;scode&quot;=&quot;SCODE&quot;))
+head(data)</code></pre>
+<pre><code>## # A tibble: 6 x 8
+## scode country source idp host ACTOTAL regions TOTALAC
+## &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 USA United States 0 0 492 2 2 0
+## 2 CAN Canada 0 0 70 0 1 2
+## 3 CUB Cuba 1 0 1 0 1 0
+## 4 HAI Haiti 25 0 0 0 1 0
+## 5 DOM Dominican Republic 0 0 1 0 1 0
+## 6 JAM Jamaica 0 0 0 0 1 0</code></pre>
+</div>
+<div id="manova" class="section level1 tabset">
+<h1>MANOVA</h1>
+<p>A one-way MANOVA was conducted to determine the effect of the number of geopolitical <em>regions</em> (0, 1, 2, and 3) on five dependent numeric variables (<em>source</em>, <em>idp</em>, <em>host</em>, <em>ACTOTAL</em>, and <em>TOTALAC</em>).</p>
+<pre class="r"><code># MANOVA (1 hypothesis test)
+man &lt;- manova(cbind(source, idp, host, ACTOTAL, TOTALAC) ~ as.character(regions), data = data)
+summary(man)</code></pre>
+<pre><code>## Df Pillai approx F num Df den Df Pr(&gt;F)
+## as.character(regions) 3 0.62232 7.9567 15 456 4.881e-16
+***
+## Residuals 154
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<p>Significant differences were found among the three <em>regions</em> categories for at least one of the numerical variables (Pillai trace = 7.9567, pseudo F(15, 456) = 7.9567, p &lt; 0.0001).</p>
+<div id="univariate-anovas" class="section level2">
+<h2>Univariate ANOVAs</h2>
+<p>Univariate ANOVAs for each dependent, numeric variable were conducted.</p>
+<pre class="r"><code># Univariate ANOVAs (5 hypothesis tests)
+summary.aov(man)</code></pre>
+<pre><code>## Response source :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## as.character(regions) 3 258822 86274 0.6355 0.5932
+## Residuals 154 20906048 135754
+##
+## Response idp :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## as.character(regions) 3 17025446 5675149 44.104 &lt;
+2.2e-16 ***
+## Residuals 154 19816023 128675
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response host :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## as.character(regions) 3 503510 167837 1.912 0.1299
+## Residuals 154 13518048 87780
+##
+## Response ACTOTAL :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## as.character(regions) 3 52.30 17.4332 6.9074 0.000215
+***
+## Residuals 154 388.67 2.5238
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response TOTALAC :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## as.character(regions) 3 706.32 235.442 12.737 1.762e-07
+***
+## Residuals 154 2846.67 18.485
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<p>** The univariate ANOVAs for <em>idp</em> (F(3, 154) = 44.104, p &lt; 0.0001), <em>ACTOTAL</em> (F(3, 154) = 6.9074, p &lt; 0.0001), and <em>TOTALAC</em> (F(3, 154) = 12.737, p &lt; 0.0001) were significant.</p>
+</div>
+<div id="post-hoc-t-tests" class="section level2">
+<h2>Post hoc t-tests</h2>
+<p>Post hoc analysis was performed conducting pairwise comparisons to <em>regions</em> categories differed in <em>idp</em>, <em>ACTOTAL</em>, and <em>TOTALAC</em>.</p>
+<pre class="r"><code># Post hoc t-tests  (30 hypothesis test - 6 tests each)
+pairwise.t.test(data$source, data$regions, p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data$source and data$regions 
+## 
+##   0    1    2   
+## 1 0.70 -    -   
+## 2 0.61 0.77 -   
+## 3 0.19 0.20 0.27
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(data$idp, data$regions, p.adj=&quot;none&quot;) # Significant</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data$idp and data$regions 
+## 
+##   0      1      2     
+## 1 0.516  -      -     
+## 2 0.103  0.054  -     
+## 3 &lt;2e-16 &lt;2e-16 &lt;2e-16
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(data$host, data$regions, p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data$host and data$regions 
+## 
+##   0     1     2    
+## 1 0.608 -     -    
+## 2 0.117 0.043 -    
+## 3 0.214 0.261 0.725
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(data$ACTOTAL, data$regions, p.adj=&quot;none&quot;) # Significant</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data$ACTOTAL and data$regions 
+## 
+##   0       1       2      
+## 1 0.41248 -       -      
+## 2 0.21956 0.35146 -      
+## 3 3.8e-05 2.2e-05 0.00019
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(data$TOTALAC, data$regions, p.adj=&quot;none&quot;) # Significant</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  data$TOTALAC and data$regions 
+## 
+##   0       1       2      
+## 1 0.17315 -       -      
+## 2 0.00095 0.00012 -      
+## 3 5.7e-06 9.3e-06 0.00350
+## 
+## P value adjustment method: none</code></pre>
+<p>Countries in three geopolitical regions were significantly different than isolated countries or countries in one geopolitical region in all three numerical variables after adjusting for multiple comparisons (Bonferroni alpha = 0.0013). Countries in three geopolitical regions were also significantly different than countries in two geopolitical regions in the number of internally displaced persons in a country and ACTOTAL, adjusting for multiple comparisons.</p>
+</div>
+<div id="discussion" class="section level2">
+<h2>Discussion</h2>
+<p>There were 36 hypothesis tests done in total. Across this whole set of tests, the probability that I have made at least one type I error is 0.8422. The significance level should be 0.0013 to keep the overall type I error rate at .05.</p>
+<pre class="r"><code># Number of hypothesis tests
+1 + 5 + 30</code></pre>
+<pre><code>## [1] 36</code></pre>
+<pre class="r"><code># The probability of at least one type I error
+1-(0.95)^(36)</code></pre>
+<pre><code>## [1] 0.8422208</code></pre>
+<pre class="r"><code># Bonferri Correction
+0.05/36</code></pre>
+<pre><code>## [1] 0.001388889</code></pre>
+<p>The MANOVA assumptions are very restrictive, so the data probably violated them. The assumptions include a multivariate normal distribution, all groups having the same variance/covariance, sensitive to multicollinearity, and needs more samples than variables. My data contained many 0s and outliers, which mean it failed these assumptions</p>
+</div>
+</div>
+<div id="randomization-test" class="section level1 tabset">
+<h1>Randomization Test</h1>
+<div id="one-way-anova" class="section level2">
+<h2>One-Way ANOVA</h2>
+<p>A randomization test was performed to examine if the total MEPV scores for all bordering states (<em>TOTALAC</em>) differ based on the number of geopolitical regions (<em>regions</em>). Isolated countries were excluded from this analysis because all of them would have a TOTALAC of 0. The null hypothesis is that the mean TOTALAC does not differ based on the number of geopolitical regions. The alternative hypothesis is that the mean TOTALAC does differ based on the number of geopolitical regions.</p>
+<pre class="r"><code># Filter out isolated countries
+data2 &lt;- data %&gt;% filter(regions != &quot;0&quot;)
+
+data2 %&gt;%  ggplot(aes(x = regions, y = TOTALAC, group = regions, fill = as.character(regions))) + geom_boxplot() + 
+# Add labels
+  labs(x = &quot;Number of geopolitical regions&quot;, y = &quot;Total MEPV scores for all bordering states&quot;, fill = &quot;# of regions&quot;, title = &quot;TOTALAC by number of geopolitical regions&quot;) +
+# Change text font
+  theme(text = element_text(family =&quot;Comic Sans MS&quot;)) + 
+# Center title
+  theme(plot.title = element_text(hjust = 0.5)) + 
+# Change color
+  scale_fill_brewer(palette = &quot;PiYG&quot;) </code></pre>
+<p><img src="/project/project2_files/figure-html/unnamed-chunk-6-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># One-Way ANOVA
+summary(aov(TOTALAC ~ as.character(regions), data = data2))</code></pre>
+<pre><code>## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## as.character(regions) 2 650.4 325.2 17.02 2.2e-07 ***
+## Residuals 149 2846.7 19.1
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<p>According to these results, there is a significant difference in mean TOTALAC across the three categories of <em>regions</em> (F = 17.02, df = (2, 149), p &lt; 0.0001). The F-value from the one-way ANOVA plays a role in the randomization test.</p>
+</div>
+<div id="randomization-test-1" class="section level2">
+<h2>Randomization Test</h2>
+<p>For the randomization, I scrambled the data up and repeatedly calculated the F-statistics each time. This process will result in the sampling distribution of F-statistics under the null hypothesis that all groups have the same mean. Then, I compared the actual F-statistics to the null distribution to see if it is a plausible value in the null distribution.</p>
+<pre class="r"><code># Visualization
+ggplot(data2, aes(TOTALAC, fill = regions)) + geom_histogram() + facet_wrap(~regions, ncol = 2) + theme(legend.position = &quot;none&quot;) + labs(title = &quot;TOTALAC by Number of Geopolitical Regions&quot;) </code></pre>
+<p><img src="/project/project2_files/figure-html/unnamed-chunk-7-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>set.seed(1234)
+
+#Randomization Test
+obs_F &lt;- 17.02
+
+Fs &lt;- replicate (1000, {
+  # Randomly permutate TOTALAC
+  new &lt;- data2 %&gt;% mutate(TOTALAC = sample(TOTALAC))
+  # Compute SSW and SSB
+  SSW &lt;- new %&gt;% group_by(regions) %&gt;% summarize(SSW = sum((TOTALAC - mean(TOTALAC))^2)) %&gt;% summarize(sum(SSW)) %&gt;% pull
+  SSB &lt;- new %&gt;% mutate(mean = mean(TOTALAC)) %&gt;% group_by(regions) %&gt;% mutate(groupmean = mean(TOTALAC)) %&gt;% summarize(SSB = sum((mean - groupmean))^2) %&gt;% summarize(sum(SSB)) %&gt;% pull
+  (SSB/2)/(SSW/149)
+})
+
+# Visualization of the null distribution and the test statistic
+hist(Fs, prob=T); abline(v = obs_F, col=&quot;darkorchid1&quot;, add=T)</code></pre>
+<p><img src="/project/project2_files/figure-html/unnamed-chunk-7-2.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>mean(Fs&gt;obs_F) #</code></pre>
+<pre><code>## [1] 0.316</code></pre>
+<p>The p-value of the randomization test is 0.316, which is not significant. We would fail to reject the null hypothesis because there is 0.316 F-statistics generated that was greater than our actual F-statistic.</p>
+</div>
+</div>
+<div id="linear-regression-model" class="section level1 tabset">
+<h1>Linear Regression Model</h1>
+<pre class="r"><code># Mean center numeric explanatory variables
+data$idp_c &lt;- data$idp - mean(data$idp)
+data$ACTOTAL_c &lt;- data$ACTOTAL - mean(data$ACTOTAL)
+data$TOTALAC_c &lt;- data$TOTALAC - mean(data$TOTALAC)
+
+# Linear Regression Model
+fit &lt;- lm(host ~ idp_c*ACTOTAL_c*TOTALAC_c, data = data)
+summary(fit)</code></pre>
+<pre><code>##
+## Call:
+## lm(formula = host ~ idp_c * ACTOTAL_c * TOTALAC_c, data
+= data)
+##
+## Residuals:
+## Min 1Q Median 3Q Max
+## -526.31 -104.30 -2.18 7.82 2208.17
+##
+## Coefficients:
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 85.715682 26.761107 3.203 0.00166 **
+## idp_c -0.065525 0.132061 -0.496 0.62050
+## ACTOTAL_c 9.691200 19.799674 0.489 0.62523
+## TOTALAC_c 16.065432 6.847151 2.346 0.02027 *
+## idp_c:ACTOTAL_c -0.005481 0.028510 -0.192 0.84780
+## idp_c:TOTALAC_c -0.086614 0.042065 -2.059 0.04122 *
+## ACTOTAL_c:TOTALAC_c 2.768636 4.717290 0.587 0.55814
+## idp_c:ACTOTAL_c:TOTALAC_c 0.018350 0.009824 1.868
+0.06373 .
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Residual standard error: 278.5 on 150 degrees of freedom
+## Multiple R-squared: 0.17, Adjusted R-squared: 0.1312
+## F-statistic: 4.388 on 7 and 150 DF, p-value: 0.0001859</code></pre>
+<p>For countries with average <em>ACTOTAL</em> and <em>TOTALAC</em>, for every increase of 1000 internally displaced people, the number of refugees hosted decreases by 65.525 refugees (t = -0.489, df = 150, p = 0.620). For countries with average <em>idp</em> and <em>TOTALAC</em>, for a 1 MEVP score increase in <em>ACTOTAL</em>, the number of refugees hosted increases by 9,691.2 refugees (t = 0.489, df = 150, p = 0.625). For countries with average <em>idp</em> and <em>ACTOTAL</em>, for a 1 MEVP score increase in <em>TOTALAC</em>, the number of refugees hosted increases by 16,065.43 refugees (t = 2.346, df = 150, p = 0.020). <em>ACTOTAL</em> does not have a significant interaction with <em>idp</em> or <em>TOTALAC</em> on <em>host</em>. <em>idp</em> and <em>TOTALAC</em> does have a significant interaction on <em>host</em>. The interaction of all three variables is not significant.</p>
+<div id="regression-plot" class="section level2">
+<h2>Regression Plot</h2>
+<pre class="r"><code>interact_plot(fit, pred = idp_c, modx = TOTALAC_c, x.label = &quot;Mean-centered idp&quot;, y.label = &quot;# of refugees (1000s)&quot;, main.title = &quot;Regression Interaction Plot&quot;, colors = c(&quot;sienna3&quot;,&quot;seagreen3&quot;,&quot;mediumpurple3&quot;)) + theme_minimal() + theme(text = element_text(family =&quot;Comic Sans MS&quot;)) + 
+  theme(plot.title = element_text(hjust = 0.5)) </code></pre>
+<p><img src="/project/project2_files/figure-html/unnamed-chunk-9-1.png" width="768" style="display: block; margin: auto;" />
+The model including <em>idp_c</em>, <em>ACTTOTAL_c</em>, <em>TOTALAC_c</em>, and their interactions explains 13.12% of the variation in the number of refugees (x1000) hosted by the named country (<em>host</em>).</p>
+</div>
+<div id="assumptions" class="section level2">
+<h2>Assumptions</h2>
+<p>** The assumptions of linearity, homoscedasticity, and normality are not met.**</p>
+<pre class="r"><code># Linearity and homoscedasticity
+resids &lt;- fit$residuals
+fitvals &lt;- fit$fitted.values
+ggplot() + geom_point(aes(fitvals,resids)) + geom_hline(yintercept=0, color=&#39;red&#39;)</code></pre>
+<p><img src="/project/project2_files/figure-html/unnamed-chunk-10-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Normality
+ggplot() + geom_histogram(aes(resids), bins=20)</code></pre>
+<p><img src="/project/project2_files/figure-html/unnamed-chunk-10-2.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ks.test(resids, &quot;pnorm&quot;, mean=0, sd(resids)) </code></pre>
+<pre><code>## 
+##  One-sample Kolmogorov-Smirnov test
+## 
+## data:  resids
+## D = 0.33491, p-value = 7.772e-16
+## alternative hypothesis: two-sided</code></pre>
+</div>
+<div id="recomputing-regression-with-robust-ses" class="section level2">
+<h2>Recomputing Regression with Robust SEs</h2>
+<pre class="r"><code>coeftest(fit, vcov = vcovHC(fit))</code></pre>
+<pre><code>##
+## t test of coefficients:
+##
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 85.7156823 22.0231493 3.8921 0.0001491 ***
+## idp_c -0.0655245 0.1030906 -0.6356 0.5260049
+## ACTOTAL_c 9.6912004 10.5424982 0.9193 0.3594402
+## TOTALAC_c 16.0654320 9.5696476 1.6788 0.0952749 .
+## idp_c:ACTOTAL_c -0.0054812 0.0199557 -0.2747 0.7839496
+## idp_c:TOTALAC_c -0.0866135 0.0506632 -1.7096 0.0894086 .
+## ACTOTAL_c:TOTALAC_c 2.7686362 6.3045268 0.4392 0.6611844
+## idp_c:ACTOTAL_c:TOTALAC_c 0.0183502 0.0100315 1.8293
+0.0693470 .
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<p>There were no changes in slope estimates after recomputing the regression with robust standard errors. The standard errors for all entries decreases except for <em>TOTALAC_c</em>.</p>
+</div>
+<div id="rerunning-with-bootstrapping-ses" class="section level2">
+<h2>Rerunning with Bootstrapping SEs</h2>
+<pre class="r"><code>set.seed(1234)
+
+samp_distn&lt;-replicate(5000, {
+boot_dat &lt;- sample_frac(data, replace=T)
+fit &lt;- lm(host ~ idp_c*ACTOTAL_c*TOTALAC_c, data=boot_dat) 
+coef(fit) 
+})
+
+## Estimated SEs
+samp_distn %&gt;% t %&gt;% as.data.frame %&gt;% summarize_all(sd)</code></pre>
+<pre><code>## (Intercept) idp_c ACTOTAL_c TOTALAC_c idp_c:ACTOTAL_c
+idp_c:TOTALAC_c ACTOTAL_c:TOTALAC_c
+## 1 23.31477 0.1369047 21.13766 8.949565 0.03791753
+0.06191831 8.928628
+## idp_c:ACTOTAL_c:TOTALAC_c
+## 1 0.01609916</code></pre>
+<p>Compared to the original SEs and robust SEs, the bootstrapping SEs are all slightly greater except for the intercept. Since bootstrapping SEs are greater,the p-values are also greater.</p>
+</div>
+</div>
+<div id="logistic-regression" class="section level1 tabset">
+<h1>Logistic Regression</h1>
+<p>A new binary variable <em>MEVP</em> was created. MEVP indicates whether or not a country experienced a major episode of political violence in the year 2001.</p>
+<pre class="r"><code># Created new binary variable MEPV
+data2 &lt;- data %&gt;% mutate(MEPV = ifelse(ACTOTAL &gt; 0, 1, 0))
+
+# Logistic Regression
+fit2 &lt;- glm(MEPV ~ idp + source, family = &quot;binomial&quot;, data = data2)
+coeftest(fit2)</code></pre>
+<pre><code>##
+## z test of coefficients:
+##
+## Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept) -2.6534628 0.3425912 -7.7453 9.538e-15 ***
+## idp 0.0052654 0.0013828 3.8079 0.0001402 ***
+## source 0.0048096 0.0032136 1.4966 0.1344872
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>exp(coef(fit2))</code></pre>
+<pre><code>## (Intercept)         idp      source 
+##  0.07040698  1.00527926  1.00482121</code></pre>
+<p>If a country has no internally displaced persons and no refugees (x1000) originating from the country, it is predicted that it would have no major episodes of political violence (MEPV). This is indicated by the negative estimate for the intercept. Odds of MEPV increase 0.5279% for every additional thousand internally displaced - Compute and discuss the Accuracy, Sensitivity (TPR), Specificity (TNR), Precision (PPV), and AUC of your model (5)persons in the country. Odds of MEPV increase 0.4821% for every additional thousand internally displaced persons in the country.</p>
+<div id="confusion-matrix" class="section level2">
+<h2>Confusion Matrix</h2>
+<p>A confusion matrix is a table of model predictions versus true outcomes.</p>
+<pre class="r"><code>prob &lt;- predict(fit2, type = &quot;response&quot;)
+table(truth = data2$MEPV, prediction = factor(prob &gt; 0.5, levels = c(&quot;FALSE&quot;, &quot;TRUE&quot;))) %&gt;% addmargins()</code></pre>
+<pre><code>##      prediction
+## truth FALSE TRUE Sum
+##   0     128    3 131
+##   1      13   14  27
+##   Sum   141   17 158</code></pre>
+<pre class="r"><code>class_diag(prob, data2$MEPV)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.8987342 0.5185185 0.9770992 0.8235294 0.8938366</code></pre>
+<p>The accuracy (0.898) is the proportion of correctly classified cases. Sensitivity, also known as the true positive rate, was 0.519. 0.519 countries with a MEVP in 2001 were correctly classified. Specificity, also known as the true negative rate, was 0.977. 0.977 countries without a MEVP in 2001 were correctly classified. The precision for the model was 0.823. Precision is the proportion of countries predicted to have at least one MEVP who experience MEVP in 2001. AUC is the area under a ROC curve. AUC is an aggregate measure of performance for the model. Our model had a cross-validation AUC of 0.894, which is considered good.</p>
+</div>
+<div id="density-plot" class="section level2">
+<h2>Density plot</h2>
+<p>Below is the density plot of the log-odds (logit). The plot is colored and grouped by the binary outcome variable <em>MEPV</em>.</p>
+<pre class="r"><code>data2$logit &lt;- predict(fit2,type=&quot;link&quot;)
+data2 %&gt;% mutate(MEPV = as.factor(MEPV)) %&gt;% ggplot() + geom_density(aes(logit, fill=MEPV)) +
+  theme(legend.position=&quot;bottom&quot;) + geom_vline(xintercept=0) + xlab(&quot;predictor (logit)&quot;) + ggtitle(&quot;Density Plot of Logit&quot;) + scale_fill_brewer(name = NULL, labels = c(&quot;No MEPV&quot;,&quot;Had MEPV&quot;), palette = &quot;Accent&quot;) +   theme(text = element_text(family =&quot;Comic Sans MS&quot;)) + theme(plot.title = element_text(hjust = 0.5))</code></pre>
+<p><img src="/project/project2_files/figure-html/unnamed-chunk-15-1.png" width="768" style="display: block; margin: auto;" />
+(5)
+## ROC Curve and AUC Calculation</p>
+<pre class="r"><code>class_diag(prob, data2$MEPV)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.8987342 0.5185185 0.9770992 0.8235294 0.8938366</code></pre>
+<pre class="r"><code>ROCplot &lt;- ggplot(data2) + geom_roc(aes(d = MEPV, m = prob), n.cuts=0) 
+ROCplot</code></pre>
+<p><img src="/project/project2_files/figure-html/unnamed-chunk-16-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>calc_auc(ROCplot)</code></pre>
+<pre><code>##   PANEL group       AUC
+## 1     1    -1 0.8938366</code></pre>
+<p>ROC curve is a visualization of the trade-off between sensitivity and specificity. As mentioned earlier, the AUC is 0.893. The AUC, which summarizes sensitivity and specificity in a single value, is considered good.</p>
+</div>
+</div>
+<div id="logistic-regression-using-all-variables" class="section level1 tabset">
+<h1>Logistic Regression Using All Variables</h1>
+<pre class="r"><code>data3 &lt;- data2 %&gt;% select(source, idp, host, regions, TOTALAC, MEPV)
+fit3 &lt;- glm(MEPV~., family = &quot;binomial&quot;, data = data3)
+coeftest(fit3)</code></pre>
+<pre><code>##
+## z test of coefficients:
+##
+## Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept) -2.32855828 0.84949253 -2.7411 0.006123 **
+## source 0.00590900 0.00350810 1.6844 0.092107 .
+## idp 0.00545912 0.00139476 3.9140 9.077e-05 ***
+## host 0.00079183 0.00067646 1.1705 0.241785
+## regions -0.77705530 0.83248900 -0.9334 0.350607
+## TOTALAC 0.08690283 0.05466073 1.5899 0.111867
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>prob3 &lt;- predict(fit3, type = &quot;response&quot;)
+class_diag(prob3, data3$MEPV)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.8987342 0.5555556 0.9694656 0.7894737 0.8843653</code></pre>
+<p>Our model with all possible explanatory variables had a cross-validation AUC of 0.884, which is considered good. The AUC is less than the previous model. The accuracy, sensitivity, specificity, and precision are the same as the model with just <em>idp</em> and source* up to seven decimal places.</p>
+<div id="fold-cv" class="section level2">
+<h2>10-fold CV</h2>
+<pre class="r"><code>set.seed(1234)
+
+k = 10 #choose number of folds
+
+data4 &lt;- data3[sample(nrow(data3)),] #put dataset in random order
+folds &lt;- cut(seq(1:nrow(data3)), breaks = k, labels = F) #create folds
+
+diags &lt;- NULL
+
+for(i in 1:k){
+  
+  ## Create training and test sets
+  train &lt;- data4[folds!=i,]
+  test &lt;- data4[folds==i,]
+  truth &lt;- test$MEPV
+  
+  ## Train model on training set
+  fit &lt;- glm(MEPV ~ source + idp + host + TOTALAC + regions, data = train, family = &quot;binomial&quot;)
+  probs &lt;- predict(fit, newdata = test, type = &quot;response&quot;)
+  ## Test model on test set (save all k results)
+  diags&lt;-rbind(diags, class_diag(probs, truth))
+}
+
+diags %&gt;% summarize_all(mean)</code></pre>
+<pre><code>##         acc      sens      spec       ppv      auc
+## 1 0.8733333 0.4983333 0.9550483 0.6666667 0.885378</code></pre>
+<p>The AUC is 0.885, which is considered good. The out of sample AUC is greater than the in-sample metrics (0.884).</p>
+</div>
+<div id="lasso" class="section level2">
+<h2>LASSO</h2>
+<pre class="r"><code>set.seed(1234)
+k=10
+
+data5 &lt;- data3 %&gt;% na.omit()
+cv.lasso1 &lt;- cv.glmnet(x = model.matrix(MEPV~., data = data5)[,-1], y = as.matrix(data5$MEPV), family = &quot;binomial&quot;)
+lasso1 &lt;- glmnet(x = model.matrix(MEPV~., data = data5)[,-1], y = as.matrix(data5$MEPV), family = &quot;binomial&quot;, alpha =1 ,lambda = cv.lasso1$lambda.1se)
+coef(lasso1)</code></pre>
+<pre><code>## 6 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                       s0
+## (Intercept) -1.839957287
+## source       .          
+## idp          0.001323456
+## host         .          
+## regions      .          
+## TOTALAC      .</code></pre>
+<pre class="r"><code>lasso_dat &lt;- data5 %&gt;% select(idp, MEPV)
+
+fit_1d &lt;- glm(MEPV~., data = lasso_dat, family=&quot;binomial&quot;)
+probs_1d &lt;- predict(fit_1d, type = &quot;response&quot;)
+class_diag(probs_1d, lasso_dat$MEPV)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.8924051 0.5185185 0.9694656 0.7777778 0.8823862</code></pre>
+<pre class="r"><code>table(truth = lasso_dat$MEPV, prediction = factor(probs_1d &gt; 0.5, levels = c(&quot;FALSE&quot;, &quot;TRUE&quot;))) %&gt;% addmargins()</code></pre>
+<pre><code>##      prediction
+## truth FALSE TRUE Sum
+##   0     127    4 131
+##   1      13   14  27
+##   Sum   140   18 158</code></pre>
+<p>The only variable retained was the number of internally displaced persons (x1000) in the named country (<em>idp</em>).</p>
+</div>
+<div id="fold-cv-on-lasso-variable" class="section level2">
+<h2>10-fold CV on LASSO variable</h2>
+<pre><code>- Perform 10-fold CV using only the variables lasso selected: compare model&#39;s out-of-sample AUC to that of your logistic regressions above (5)</code></pre>
+<pre class="r"><code>set.seed(1234)
+
+k = 10 #choose number of folds
+
+data6 &lt;- data3[sample(nrow(data3)),] #put dataset in random order
+folds &lt;- cut(seq(1:nrow(data3)), breaks = k, labels = F) #create folds
+
+diags &lt;- NULL
+
+for(i in 1:k){
+  
+  ## Create training and test sets
+  train &lt;- data6[folds!=i,]
+  test &lt;- data6[folds==i,]
+  truth &lt;- test$MEPV
+  
+  ## Train model on training set
+  fit &lt;- glm(MEPV ~ idp, data = train, family = &quot;binomial&quot;)
+  probs &lt;- predict(fit, newdata = test, type = &quot;response&quot;)
+  ## Test model on test set (save all k results)
+  diags&lt;-rbind(diags, class_diag(probs, truth))
+}
+
+diags %&gt;% summarize_all(mean)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.8929167 0.5233333 0.9708059 0.7166667 0.8911056</code></pre>
+<p>The out of sample AUC (0.891) is greater than the AUC from the LASSO (0.882).</p>
+<p>…</p>
+</div>
+</div>
+
+            
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
+            </div>
+          </div>
+
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
+        </div>
+      </div>
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/docs.min.js"></script>
+<script src="/js/main.js"></script>
+
+<script src="/js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>

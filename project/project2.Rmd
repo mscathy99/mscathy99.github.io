@@ -1,0 +1,368 @@
+---
+title: 'Project 2: Modeling, Testing, and Predicting'
+author: "SDS348"
+date: '2021-05-07'
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE,fig.align="center",warning=FALSE,message=FALSE,fig.width=8, fig.height=5, linewidth=60)
+options(tibble.width = 100,width = 100)
+library(tidyverse)
+
+class_diag <- function(probs,truth){ 
+  #CONFUSION MATRIX: CALCULATE ACCURACY, TPR, TNR, PPV 
+  if(is.character(truth)==TRUE) truth<-as.factor(truth) 
+  if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE) truth<-as.numeric(truth)-1 
+  tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),factor(truth, levels=c(0,1))) 
+  acc=sum(diag(tab))/sum(tab) 
+  sens=tab[2,2]/colSums(tab)[2] 
+  spec=tab[1,1]/colSums(tab)[1] 
+  ppv=tab[2,2]/rowSums(tab)[2] 
+  
+#CALCULATE EXACT AUC 
+  ord<-order(probs, decreasing=TRUE) 
+  probs <- probs[ord]; truth <- truth[ord] 
+  TPR=cumsum(truth)/max(1,sum(truth))  
+  FPR=cumsum(!truth)/max(1,sum(!truth)) 
+  dup <-c(probs[-1]>=probs[-length(probs)], FALSE) 
+  TPR <-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1) 
+  n <- length(TPR) 
+  auc <- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n])) 
+  data.frame(acc,sens,spec,ppv,auc) 
+}
+```
+
+```{r LoadPackages, include = FALSE, warning = FALSE}    
+library(readxl)
+library(extrafont)
+loadfonts()
+library(RColorBrewer)
+library(vegan)
+library(interactions)
+library(lmtest)
+library(sandwich)
+library(plotROC)
+library(glmnet)
+```
+
+# Introduction
+The Center of Systemic Peace (CSP) engages in political violence research and continually monitors political behavior in world states (independent countries with a population greater than 500,000). The Integrated Network for Societal Conflict Research (INSCR) coordinates the information produced y the CSP. I combined two of their datasets, Forcibly Displaced Populations and Major Episodes of Political Violence, for information in the year 2001. Both datasets identified countries by a standard 3-letter alpha country identifier code. From the Forcibly Displaced Populations dataset, I extracted the number of refugees (x1000) originating in a country (*source*), the number of internally displaced persons (x1000) in a country (*idp*), and the number of refugees (x1000) hosted by a world state (*host*) for the year 2001. From the Major Episodes of Political Violence (*MEVP*), I extracted the sum of all societal and interstate MEPV magnitude scores (*ACTTOT*), geopolitical region based on INSCR (*REGION*), and the sum of all societal and interstate MEPV magnitude scores for all bordering states (*TOTALAC*). Individual MEPV scores (not included in my final dataset) reported using a scale from 1 (lowest) to 10 (highest) unless there were no episodes (denoted by a 0 instead). ACTTOT and TOTALAC are the sums of individual MEPV for a country and neighboring countries. The new *regions* variable is the number of INSCR geopolitical regions the country contains. The final dataset for the project includes 158 countries.The numerical variables are *source*, *idp*, *host*, *ACTTOT*, and *TOTALAC*.  The categorical variable is *regions*.
+```{R}
+# Forcibly Displaced Populations
+displacement <- read_excel("Forcibly Displaced Populations.xlsx")
+d <- displacement %>% na.omit() %>%  filter(year == "2001") %>% select(scode, country, source, idp, host)
+
+# Major Episodes of Political Violence
+violence <- read_excel("Major Episodes of Political Violence.xlsx")
+v <- violence %>% filter(YEAR == "2001") %>% mutate(regions = ifelse(REGION == 99, 0, ifelse(REGION < 10, 1, ifelse(REGION == 53, 3, ifelse(REGION == 41, 3, 2))))) %>% select(SCODE, ACTOTAL, regions, TOTALAC) %>% na.omit()
+
+# Full dataset
+data <- inner_join(d, v, by = c("scode"="SCODE"))
+head(data)
+```
+
+# MANOVA {.tabset}
+
+A one-way MANOVA was conducted to determine the effect of the number of geopolitical *regions* (0, 1, 2, and 3) on five dependent numeric variables (*source*, *idp*, *host*, *ACTOTAL*, and *TOTALAC*).
+```{R}
+# MANOVA (1 hypothesis test)
+man <- manova(cbind(source, idp, host, ACTOTAL, TOTALAC) ~ as.character(regions), data = data)
+summary(man)
+```
+Significant differences were found among the three *regions* categories for at least one of the numerical variables (Pillai trace = 7.9567, pseudo F(15, 456) = 7.9567, p < 0.0001).
+
+## Univariate ANOVAs
+Univariate ANOVAs for each dependent, numeric variable were conducted.
+```{R}
+# Univariate ANOVAs (5 hypothesis tests)
+summary.aov(man)
+```
+** The univariate ANOVAs for *idp* (F(3, 154) = 44.104, p < 0.0001), *ACTOTAL* (F(3, 154) = 6.9074, p < 0.0001), and *TOTALAC* (F(3, 154) = 12.737, p < 0.0001) were significant. 
+
+## Post hoc t-tests
+Post hoc analysis was performed conducting pairwise comparisons to *regions* categories differed in *idp*, *ACTOTAL*, and *TOTALAC*.
+```{R}
+# Post hoc t-tests  (30 hypothesis test - 6 tests each)
+pairwise.t.test(data$source, data$regions, p.adj="none")
+pairwise.t.test(data$idp, data$regions, p.adj="none") # Significant
+pairwise.t.test(data$host, data$regions, p.adj="none")
+pairwise.t.test(data$ACTOTAL, data$regions, p.adj="none") # Significant
+pairwise.t.test(data$TOTALAC, data$regions, p.adj="none") # Significant
+```
+Countries in three geopolitical regions were significantly different than isolated countries or countries in one geopolitical region in all three numerical variables after adjusting for multiple comparisons (Bonferroni alpha = 0.0013). Countries in three geopolitical regions were also significantly different than countries in two geopolitical regions in the number of internally displaced persons in a country and ACTOTAL, adjusting for multiple comparisons.
+
+## Discussion
+There were 36 hypothesis tests done in total. Across this whole set of tests, the probability that I have made at least one type I error is 0.8422. The significance level should be 0.0013 to keep the overall type I error rate at .05.
+```{R}
+# Number of hypothesis tests
+1 + 5 + 30
+# The probability of at least one type I error
+1-(0.95)^(36)
+# Bonferri Correction
+0.05/36
+```
+The MANOVA assumptions are very restrictive, so the data probably violated them. The assumptions include a multivariate normal distribution, all groups having the same variance/covariance, sensitive to multicollinearity, and needs more samples than variables. My data contained many 0s and outliers, which mean it failed these assumptions
+
+# Randomization Test {.tabset}
+
+## One-Way ANOVA
+A randomization test was performed to examine if the total MEPV scores for all bordering states (*TOTALAC*) differ based on the number of geopolitical regions (*regions*). Isolated countries were excluded from this analysis because all of them would have a TOTALAC of 0. The null hypothesis is that the mean TOTALAC does not differ based on the number of geopolitical regions. The alternative hypothesis is that the mean TOTALAC does differ based on the number of geopolitical regions.
+```{R}
+# Filter out isolated countries
+data2 <- data %>% filter(regions != "0")
+
+data2 %>%  ggplot(aes(x = regions, y = TOTALAC, group = regions, fill = as.character(regions))) + geom_boxplot() + 
+# Add labels
+  labs(x = "Number of geopolitical regions", y = "Total MEPV scores for all bordering states", fill = "# of regions", title = "TOTALAC by number of geopolitical regions") +
+# Change text font
+  theme(text = element_text(family ="Comic Sans MS")) + 
+# Center title
+  theme(plot.title = element_text(hjust = 0.5)) + 
+# Change color
+  scale_fill_brewer(palette = "PiYG") 
+
+# One-Way ANOVA
+summary(aov(TOTALAC ~ as.character(regions), data = data2))
+```
+According to these results, there is a significant difference in mean TOTALAC across the three categories of *regions* (F = 17.02, df = (2, 149), p < 0.0001). The F-value from the one-way ANOVA plays a role in the randomization test.
+
+## Randomization Test
+For the randomization, I scrambled the data up and repeatedly calculated the F-statistics each time. This process will result in the sampling distribution of F-statistics under the null hypothesis that all groups have the same mean. Then, I compared the actual F-statistics to the null distribution to see if it is a plausible value in the null distribution.
+```{R, warning = FALSE, message = FALSE}
+# Visualization
+ggplot(data2, aes(TOTALAC, fill = regions)) + geom_histogram() + facet_wrap(~regions, ncol = 2) + theme(legend.position = "none") + labs(title = "TOTALAC by Number of Geopolitical Regions") 
+
+set.seed(1234)
+
+#Randomization Test
+obs_F <- 17.02
+
+Fs <- replicate (1000, {
+  # Randomly permutate TOTALAC
+  new <- data2 %>% mutate(TOTALAC = sample(TOTALAC))
+  # Compute SSW and SSB
+  SSW <- new %>% group_by(regions) %>% summarize(SSW = sum((TOTALAC - mean(TOTALAC))^2)) %>% summarize(sum(SSW)) %>% pull
+  SSB <- new %>% mutate(mean = mean(TOTALAC)) %>% group_by(regions) %>% mutate(groupmean = mean(TOTALAC)) %>% summarize(SSB = sum((mean - groupmean))^2) %>% summarize(sum(SSB)) %>% pull
+  (SSB/2)/(SSW/149)
+})
+
+# Visualization of the null distribution and the test statistic
+hist(Fs, prob=T); abline(v = obs_F, col="darkorchid1", add=T)
+mean(Fs>obs_F) #
+```
+The p-value of the randomization test is 0.316, which is not significant. We would fail to reject the null hypothesis because there is 0.316 F-statistics generated that was greater than our actual F-statistic.
+
+# Linear Regression Model {.tabset}
+```{R}
+# Mean center numeric explanatory variables
+data$idp_c <- data$idp - mean(data$idp)
+data$ACTOTAL_c <- data$ACTOTAL - mean(data$ACTOTAL)
+data$TOTALAC_c <- data$TOTALAC - mean(data$TOTALAC)
+
+# Linear Regression Model
+fit <- lm(host ~ idp_c*ACTOTAL_c*TOTALAC_c, data = data)
+summary(fit)
+```
+For countries with average *ACTOTAL* and *TOTALAC*, for every increase of 1000 internally displaced people, the number of refugees hosted decreases by 65.525 refugees (t = -0.489, df = 150, p = 0.620). For countries with average *idp* and *TOTALAC*, for a 1 MEVP score increase in *ACTOTAL*, the number of refugees hosted increases by 9,691.2 refugees (t = 0.489, df = 150, p = 0.625). For countries with average *idp* and *ACTOTAL*, for a 1 MEVP score increase in *TOTALAC*, the number of refugees hosted increases by 16,065.43 refugees (t = 2.346, df = 150, p = 0.020). *ACTOTAL* does not have a significant interaction with *idp* or *TOTALAC* on *host*. *idp* and *TOTALAC* does have a significant interaction on *host*. The interaction of all three variables is not significant.
+
+## Regression Plot
+```{R, message = FALSE, warning = FALSE, cache = FALSE}
+interact_plot(fit, pred = idp_c, modx = TOTALAC_c, x.label = "Mean-centered idp", y.label = "# of refugees (1000s)", main.title = "Regression Interaction Plot", colors = c("sienna3","seagreen3","mediumpurple3")) + theme_minimal() + theme(text = element_text(family ="Comic Sans MS")) + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+The model including *idp_c*, *ACTTOTAL_c*, *TOTALAC_c*, and their interactions explains 13.12% of the variation in the number of refugees (x1000) hosted by the named country (*host*).
+
+## Assumptions
+** The assumptions of linearity, homoscedasticity, and normality are not met.**
+```{R, message = FALSE, warning = FALSE}
+# Linearity and homoscedasticity
+resids <- fit$residuals
+fitvals <- fit$fitted.values
+ggplot() + geom_point(aes(fitvals,resids)) + geom_hline(yintercept=0, color='red')
+# Normality
+ggplot() + geom_histogram(aes(resids), bins=20)
+ks.test(resids, "pnorm", mean=0, sd(resids)) 
+```
+
+## Recomputing Regression with Robust SEs
+```{R}
+coeftest(fit, vcov = vcovHC(fit))
+```
+There were no changes in slope estimates after recomputing the regression with robust standard errors. The standard errors for all entries decreases except for *TOTALAC_c*.
+
+## Rerunning with Bootstrapping SEs
+```{R}
+set.seed(1234)
+
+samp_distn<-replicate(5000, {
+boot_dat <- sample_frac(data, replace=T)
+fit <- lm(host ~ idp_c*ACTOTAL_c*TOTALAC_c, data=boot_dat) 
+coef(fit) 
+})
+
+## Estimated SEs
+samp_distn %>% t %>% as.data.frame %>% summarize_all(sd)
+```
+Compared to the original SEs and robust SEs, the bootstrapping SEs are all slightly greater except for the intercept. Since bootstrapping SEs are greater,the p-values are also greater.
+
+
+# Logistic Regression {.tabset}
+
+A new binary variable *MEVP* was created. MEVP indicates whether or not a country experienced a major episode of political violence in the year 2001.
+``` {R}
+# Created new binary variable MEPV
+data2 <- data %>% mutate(MEPV = ifelse(ACTOTAL > 0, 1, 0))
+
+# Logistic Regression
+fit2 <- glm(MEPV ~ idp + source, family = "binomial", data = data2)
+coeftest(fit2)
+exp(coef(fit2))
+```
+If a country has no internally displaced persons and no refugees (x1000) originating from the country, it is predicted that it would have no major episodes of political violence (MEPV). This is indicated by the negative estimate for the intercept. Odds of MEPV increase 0.5279% for every additional thousand internally displaced     - Compute and discuss the Accuracy, Sensitivity (TPR), Specificity (TNR), Precision (PPV), and AUC of your model (5)persons in the country. Odds of MEPV increase 0.4821% for every additional thousand internally displaced persons in the country. 
+
+## Confusion Matrix
+A confusion matrix is a table of model predictions versus true outcomes.
+```{R}
+prob <- predict(fit2, type = "response")
+table(truth = data2$MEPV, prediction = factor(prob > 0.5, levels = c("FALSE", "TRUE"))) %>% addmargins()
+class_diag(prob, data2$MEPV)
+```
+The accuracy (0.898) is the proportion of correctly classified cases. Sensitivity, also known as the true positive rate, was 0.519. 0.519 countries with a MEVP in 2001 were correctly classified. Specificity, also known as the true negative rate, was 0.977. 0.977 countries without a MEVP in 2001 were correctly classified. The precision for the model was 0.823. Precision is the proportion of countries predicted to have at least one MEVP who experience MEVP in 2001. AUC is the area under a ROC curve. AUC is an aggregate measure of performance for the model. Our model had a cross-validation AUC of 0.894, which is considered good.
+    
+## Density plot
+Below is the density plot of the log-odds (logit). The plot is colored and grouped by the binary outcome variable *MEPV*.
+```{R}
+data2$logit <- predict(fit2,type="link")
+data2 %>% mutate(MEPV = as.factor(MEPV)) %>% ggplot() + geom_density(aes(logit, fill=MEPV)) +
+  theme(legend.position="bottom") + geom_vline(xintercept=0) + xlab("predictor (logit)") + ggtitle("Density Plot of Logit") + scale_fill_brewer(name = NULL, labels = c("No MEPV","Had MEPV"), palette = "Accent") +   theme(text = element_text(family ="Comic Sans MS")) + theme(plot.title = element_text(hjust = 0.5))
+```
+     (5)
+## ROC Curve and AUC Calculation
+```{R}
+class_diag(prob, data2$MEPV)
+
+ROCplot <- ggplot(data2) + geom_roc(aes(d = MEPV, m = prob), n.cuts=0) 
+ROCplot
+calc_auc(ROCplot)
+```
+ROC curve is a visualization of the trade-off between sensitivity and specificity. As mentioned earlier, the AUC is 0.893. The AUC, which summarizes sensitivity and specificity in a single value, is considered good.
+
+# Logistic Regression Using All Variables {.tabset}
+
+```{R}
+data3 <- data2 %>% select(source, idp, host, regions, TOTALAC, MEPV)
+fit3 <- glm(MEPV~., family = "binomial", data = data3)
+coeftest(fit3)
+prob3 <- predict(fit3, type = "response")
+class_diag(prob3, data3$MEPV)
+```
+Our model with all possible explanatory variables had a cross-validation AUC of 0.884, which is considered good. The AUC is less than the previous model. The accuracy, sensitivity, specificity, and precision are the same as the model with just *idp* and source* up to seven decimal places.
+
+## 10-fold CV
+```{R, warning = FALSE}
+set.seed(1234)
+
+k = 10 #choose number of folds
+
+data4 <- data3[sample(nrow(data3)),] #put dataset in random order
+folds <- cut(seq(1:nrow(data3)), breaks = k, labels = F) #create folds
+
+diags <- NULL
+
+for(i in 1:k){
+  
+  ## Create training and test sets
+  train <- data4[folds!=i,]
+  test <- data4[folds==i,]
+  truth <- test$MEPV
+  
+  ## Train model on training set
+  fit <- glm(MEPV ~ source + idp + host + TOTALAC + regions, data = train, family = "binomial")
+  probs <- predict(fit, newdata = test, type = "response")
+  ## Test model on test set (save all k results)
+  diags<-rbind(diags, class_diag(probs, truth))
+}
+
+diags %>% summarize_all(mean)
+
+```
+The AUC is 0.885, which is considered good. The out of sample AUC is greater than the in-sample metrics (0.884).
+    
+## LASSO
+```{R}
+set.seed(1234)
+k=10
+
+data5 <- data3 %>% na.omit()
+cv.lasso1 <- cv.glmnet(x = model.matrix(MEPV~., data = data5)[,-1], y = as.matrix(data5$MEPV), family = "binomial")
+lasso1 <- glmnet(x = model.matrix(MEPV~., data = data5)[,-1], y = as.matrix(data5$MEPV), family = "binomial", alpha =1 ,lambda = cv.lasso1$lambda.1se)
+coef(lasso1)
+
+lasso_dat <- data5 %>% select(idp, MEPV)
+
+fit_1d <- glm(MEPV~., data = lasso_dat, family="binomial")
+probs_1d <- predict(fit_1d, type = "response")
+class_diag(probs_1d, lasso_dat$MEPV)
+table(truth = lasso_dat$MEPV, prediction = factor(probs_1d > 0.5, levels = c("FALSE", "TRUE"))) %>% addmargins()
+```
+The only variable retained was the number of internally displaced persons (x1000) in the named country (*idp*).
+
+## 10-fold CV on LASSO variable
+    - Perform 10-fold CV using only the variables lasso selected: compare model's out-of-sample AUC to that of your logistic regressions above (5)
+```{R}
+set.seed(1234)
+
+k = 10 #choose number of folds
+
+data6 <- data3[sample(nrow(data3)),] #put dataset in random order
+folds <- cut(seq(1:nrow(data3)), breaks = k, labels = F) #create folds
+
+diags <- NULL
+
+for(i in 1:k){
+  
+  ## Create training and test sets
+  train <- data6[folds!=i,]
+  test <- data6[folds==i,]
+  truth <- test$MEPV
+  
+  ## Train model on training set
+  fit <- glm(MEPV ~ idp, data = train, family = "binomial")
+  probs <- predict(fit, newdata = test, type = "response")
+  ## Test model on test set (save all k results)
+  diags<-rbind(diags, class_diag(probs, truth))
+}
+
+diags %>% summarize_all(mean)
+
+```
+The out of sample AUC (0.891) is greater than the AUC from the LASSO (0.882).
+
+```{R eval=F, include=FALSE}
+data(package = .packages(all.available = TRUE))
+```
+...
+
+
+
+
+

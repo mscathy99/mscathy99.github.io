@@ -1,0 +1,21 @@
+---
+title: Python and R
+author: Cathy Nguyen
+date: '2021-05-09'
+slug: python
+categories: []
+tags: []
+description: ''
+---
+
+
+```{R}
+```
+
+Square bracks ([]) define a list. Indexing begins at 0, so the first element is at the 0th position. The nth element will be located in the (n-1)th position. 
+```{python}
+personal_dict = {'firstName':'Cathy', 'lastName':"Nguyen", 'hobbies':['tennis','ice skating', 'singing', 'paper crafting'],'occupation':'student','age':22}
+print(personal_dict)
+```
+
+![Cinnamon Roll Hug](/post/2021-05-09-python_files/Group Hug.JPG)
