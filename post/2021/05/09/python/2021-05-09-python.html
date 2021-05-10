@@ -1,0 +1,44 @@
+---
+title: Python and R
+author: Cathy Nguyen
+date: '2021-05-09'
+slug: python
+categories: []
+tags: []
+description: ''
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<p>Have you ever been on a team that prefers different coding languages? For example, I am accustomed to R, but my group project partner only understands Python. Wouldn’t it be nice to have an interface where we can use both of our codes? Well, this is possible with <strong>reticulate</strong>. Reticulate embeds a Python session into an R session, which can streamline workflow. Isn’t this incredible? First, we need to install the package <em>reticulate</em>.</p>
+<pre class="r"><code>library(reticulate)
+py_install(&quot;seaborn&quot;)</code></pre>
+<p>I prefer tidying my data using dplyr in R. It’s easy, but what if my partner wants the data to create graphs using Python?</p>
+<pre class="r"><code>EADA &lt;- read_xlsx(&quot;EADA_2018.xlsx&quot;)
+Texas &lt;- EADA %&gt;% filter(state_cd == &quot;TX&quot;) %&gt;% filter(str_detect(sector_name,&quot;Public&quot;)) %&gt;% select(institution = institution_name, city = city_txt, sector = sector_name, class = classification_name, student_aid = STUDENTAID_TOTAL, Revenue = GRND_TOTAL_REVENUE, expense = GRND_TOTAL_EXPENSE) %&gt;% separate(sector, into = c(&quot;Public&quot;,&quot;College&quot;),sep = &quot;, &quot;)
+glimpse(Texas)</code></pre>
+<pre><code>## Rows: 72
+## Columns: 8
+## $ institution &lt;chr&gt; &quot;Alvin Community College&quot;, &quot;Angelina College&quot;, &quot;Angelo Sta~
+## $ city        &lt;chr&gt; &quot;Alvin&quot;, &quot;Lufkin&quot;, &quot;San Angelo&quot;, &quot;Beeville&quot;, &quot;Brenham&quot;, &quot;F~
+## $ Public      &lt;chr&gt; &quot;Public&quot;, &quot;Public&quot;, &quot;Public&quot;, &quot;Public&quot;, &quot;Public&quot;, &quot;Public&quot;~
+## $ College     &lt;chr&gt; &quot;2-year&quot;, &quot;2-year&quot;, &quot;4-year or above&quot;, &quot;2-year&quot;, &quot;2-year&quot;,~
+## $ class       &lt;chr&gt; &quot;NJCAA Division I&quot;, &quot;NJCAA Division I&quot;, &quot;NCAA Division II ~
+## $ student_aid &lt;dbl&gt; 156266, 585200, 2266336, 190800, 1191279, 0, 0, 613778, 38~
+## $ Revenue     &lt;dbl&gt; 475123, 1432955, 6860053, 1033459, 3157167, 454686, 494546~
+## $ expense     &lt;dbl&gt; 475123, 1432955, 6705761, 950306, 3114722, 454686, 494546,~</code></pre>
+<pre class="r"><code>message &lt;- &quot;Please make it pretty. -Cathy&quot;
+message</code></pre>
+<pre><code>## [1] &quot;Please make it pretty. -Cathy&quot;</code></pre>
+<p>We can create a python session in R markdown to perform the task. It’s simple. Instead of writing <em>R</em> in the curly brackets, put <em>python</em> instead. We can import python functions during this session as well. You can also create secret messages for each other and keep a fun conversation going.</p>
+<p><img src="/post/2021-05-09-python_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>As you can see, Python and R can work harmoniously together. All the components of our project can come together beautifully like a cinnamon roll hug.</p>
+<pre class="r"><code>cat(c(message, py$reply, &quot;We finished! Yay!&quot;))</code></pre>
+<pre><code>## Please make it pretty. -Cathy 
+## I got it! - T
+##  We finished! Yay!</code></pre>
+<div class="figure">
+<img src="/post/2021-05-09-python_files/Group%20Hug.JPG" style="width:80.0%" alt="" />
+<p class="caption">Cinnamon Roll Hug</p>
+</div>
